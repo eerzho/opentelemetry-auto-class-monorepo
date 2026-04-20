@@ -33,3 +33,5 @@ jobs:
           repository_organization: 'eerzho'
           repository_name: ${{ matrix.package.split_repository }}
           tag: ${{ github.ref_type == 'tag' && github.ref_name || '' }}
+          user_name: 'eerzho'
+          user_email: 'eerzho@gmail.com'
