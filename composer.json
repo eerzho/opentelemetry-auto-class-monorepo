@@ -1,6 +1,6 @@
 {
   "name": "eerzho/opentelemetry-auto-class-monorepo",
-  "description": "OpenTelemetry auto-instrumentation for PHP class methods",
+  "description": "Monorepo for automatic OpenTelemetry tracing via the #[Traceable] attribute",
   "type": "project",
   "license": "MIT",
   "authors": [
