@@ -1,0 +1,7 @@
+{
+  "language_server_diagnostics.enable": true,
+  "language_server_worse_reflection_diagnostics.enable": true,
+  "language_server_phpstan.enabled": true,
+  "language_server_phpstan.bin": "%project_root%/vendor/bin/phpstan",
+  "language_server_php_cs_fixer.enabled": true
+}

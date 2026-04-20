@@ -1,0 +1,4 @@
+{
+  "runner.bootstrap": "vendor/autoload.php",
+  "runner.path": "packages/core/benchmarks"
+}

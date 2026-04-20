@@ -1,0 +1,7 @@
+parameters:
+    level: 9
+    paths:
+        - packages/core/src/
+        - packages/symfony/src/
+        - packages/laravel/src/
+    treatPhpDocTypesAsCertain: false
