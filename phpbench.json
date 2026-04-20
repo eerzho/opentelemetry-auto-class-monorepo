@@ -1,5 +1,5 @@
 {
   "runner.bootstrap": "vendor/autoload.php",
-  "runner.path": "packages/core/benchmarks",
+  "runner.path": "benchmarks",
   "storage.xml_storage_path": "var/.phpbench-storage"
 }

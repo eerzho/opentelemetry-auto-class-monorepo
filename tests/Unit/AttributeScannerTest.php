@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace OpenTelemetry\Contrib\Instrumentation\Class\Tests;
+namespace OpenTelemetry\Contrib\Instrumentation\Class\Tests\Unit;
 
 use OpenTelemetry\Contrib\Instrumentation\Class\Attribute\Arguments;
 use OpenTelemetry\Contrib\Instrumentation\Class\Attribute\Traceable;

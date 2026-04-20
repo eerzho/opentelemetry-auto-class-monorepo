@@ -42,8 +42,8 @@
   },
   "autoload-dev": {
     "psr-4": {
-      "OpenTelemetry\\Contrib\\Instrumentation\\Class\\Tests\\": "packages/core/tests/",
-      "OpenTelemetry\\Contrib\\Instrumentation\\Class\\Benchmarks\\": "packages/core/benchmarks/"
+      "OpenTelemetry\\Contrib\\Instrumentation\\Class\\Tests\\": "tests/",
+      "OpenTelemetry\\Contrib\\Instrumentation\\Class\\Benchmarks\\": "benchmarks/"
     }
   },
   "config": {

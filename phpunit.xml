@@ -6,8 +6,8 @@
          cacheDirectory="var/.phpunit.cache"
 >
   <testsuites>
-    <testsuite name="core">
-      <directory>packages/core/tests</directory>
+    <testsuite name="default">
+      <directory>tests</directory>
     </testsuite>
   </testsuites>
 
