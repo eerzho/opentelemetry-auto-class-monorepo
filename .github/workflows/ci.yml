@@ -1,0 +1,140 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+    tags:
+      - 'v*'
+  pull_request:
+    branches:
+      - main
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: opentelemetry
+          tools: composer:v2
+          coverage: none
+
+      - uses: ramsey/composer-install@v3
+
+      - name: CS Fixer
+        run: vendor/bin/php-cs-fixer fix --dry-run --show-progress=none
+
+      - name: PHPStan
+        run: vendor/bin/phpstan analyse --no-progress
+
+  test:
+    needs: lint
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        php-version: ['8.2', '8.3', '8.4']
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php-version }}
+          extensions: opentelemetry
+          tools: composer:v2
+          coverage: ${{ matrix.php-version == '8.4' && 'xdebug' || 'none' }}
+
+      - uses: ramsey/composer-install@v3
+
+      - name: Tests
+        if: matrix.php-version != '8.4'
+        run: vendor/bin/phpunit --no-progress
+
+      - name: Tests with coverage
+        if: matrix.php-version == '8.4'
+        run: vendor/bin/phpunit --no-progress --coverage-clover=coverage.xml
+
+      - name: Upload coverage
+        if: matrix.php-version == '8.4'
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: coverage.xml
+
+  bench:
+    needs: lint
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: opentelemetry
+          tools: composer:v2
+          coverage: none
+
+      - uses: ramsey/composer-install@v3
+
+      - name: Benchmark PR branch
+        run: vendor/bin/phpbench run --report=default --progress=none --tag=pr
+
+      - name: Checkout base branch
+        run: git checkout ${{ github.event.pull_request.base.sha }}
+
+      - uses: ramsey/composer-install@v3
+
+      - name: Benchmark base branch
+        run: vendor/bin/phpbench run --report=default --progress=none --tag=base
+
+      - name: Compare
+        run: vendor/bin/phpbench report --ref=pr --baseline=base --report=default
+
+  split:
+    needs: test
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/')
+    permissions:
+      contents: write
+    strategy:
+      matrix:
+        package:
+          - local_path: 'packages/core'
+            split_repository: 'opentelemetry-auto-class'
+          - local_path: 'packages/symfony'
+            split_repository: 'opentelemetry-auto-class-symfony'
+          - local_path: 'packages/laravel'
+            split_repository: 'opentelemetry-auto-class-laravel'
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: danharrin/monorepo-split-github-action@v2.3.0
+        env:
+          GITHUB_TOKEN: ${{ secrets.SPLIT_TOKEN }}
+        with:
+          package_directory: ${{ matrix.package.local_path }}
+          repository_organization: 'eerzho'
+          repository_name: ${{ matrix.package.split_repository }}
+          tag: ${{ github.ref_type == 'tag' && github.ref_name || '' }}
+          user_name: 'eerzho'
+          user_email: 'eerzho@gmail.com'
