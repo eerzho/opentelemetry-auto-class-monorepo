@@ -34,7 +34,6 @@
       "OpenTelemetry\\Contrib\\Instrumentation\\Class\\Symfony\\": "src/"
     }
   },
-  "version": "0.1.0",
   "config": {
     "sort-packages": true
   }

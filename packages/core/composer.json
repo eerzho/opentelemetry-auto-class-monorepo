@@ -40,7 +40,6 @@
       "OpenTelemetry\\Contrib\\Instrumentation\\Class\\Benchmarks\\": "benchmarks/"
     }
   },
-  "version": "0.1.0",
   "config": {
     "sort-packages": true
   }
