@@ -23,26 +23,21 @@ vendor: build
 	@rm -rf vendor
 	@$(DOCKER_RUN) composer update --no-interaction --quiet
 
-## fix: Fix code
-fix: build
-	@echo "Fixing code..."
-	@$(DOCKER_RUN) vendor/bin/php-cs-fixer fix --show-progress=none
-
 ## lint: Lint code
 lint: build
 	@echo "Linting code..."
-	@$(DOCKER_RUN) vendor/bin/php-cs-fixer fix --dry-run --diff --show-progress=none
+	@$(DOCKER_RUN) vendor/bin/php-cs-fixer fix --show-progress=none
 	@$(DOCKER_RUN) vendor/bin/phpstan analyse --no-progress
 
 ## test: Test code
 test: build
 	@echo "Testing code..."
-	@$(DOCKER_RUN) php -dxdebug.mode=coverage vendor/bin/phpunit --no-progress --coverage-text --coverage-html coverage
+	@$(DOCKER_RUN) php -dxdebug.mode=coverage vendor/bin/phpunit --no-progress --coverage-text --coverage-html var/coverage
 
 ## bench: Bench code
 bench: build
 	@echo "Benching code..."
 	@$(DOCKER_RUN) vendor/bin/phpbench run --report=default --progress=none
 
-## audit: Vendor, fix, lint, test, bench
-audit: vendor fix lint test bench
+## audit: Vendor, lint, test, bench
+audit: vendor lint test bench

@@ -5,6 +5,7 @@ $finder = (new PhpCsFixer\Finder())
     ->notPath('vendor');
 
 return (new PhpCsFixer\Config())
+    ->setCacheFile('var/.php-cs-fixer.cache')
     ->setParallelConfig(PhpCsFixer\Runner\Parallel\ParallelConfigFactory::detect())
     ->setRiskyAllowed(true)
     ->setRules([
