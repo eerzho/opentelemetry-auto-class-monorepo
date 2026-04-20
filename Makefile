@@ -20,7 +20,6 @@ build:
 ## install: Vendor dependencies
 vendor: build
 	@echo "Vendoring dependencies..."
-	@rm -rf vendor
 	@$(DOCKER_RUN) composer update --no-interaction --quiet
 
 ## lint: Lint code
