@@ -22,7 +22,7 @@
     "php": ">=8.2",
     "ext-opentelemetry": "*",
     "open-telemetry/api": "^1.0",
-    "open-telemetry/sem-conv": "^1.32"
+    "open-telemetry/sem-conv": "^1.33"
   },
   "require-dev": {
     "open-telemetry/sdk": "^1.0",
