@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace OpenTelemetry\Contrib\Instrumentation\Class\Symfony;
 
+use Error;
 use OpenTelemetry\Contrib\Instrumentation\Class\AttributeScanner;
 use OpenTelemetry\Contrib\Instrumentation\Class\ClassInstrumentation;
 use OpenTelemetry\SDK\Sdk;
@@ -31,8 +32,15 @@ final class TraceableBundle extends Bundle implements CompilerPassInterface
         $classes = [];
         foreach ($container->getDefinitions() as $definition) {
             $class = $definition->getClass();
-            if ($class !== null && class_exists($class)) {
-                $classes[] = $class;
+            if ($class === null) {
+                continue;
+            }
+
+            try {
+                if (class_exists($class)) {
+                    $classes[] = $class;
+                }
+            } catch (Error) {
             }
         }
         $classesMap = AttributeScanner::scan($classes);
