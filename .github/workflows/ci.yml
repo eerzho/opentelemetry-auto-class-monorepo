@@ -138,3 +138,25 @@ jobs:
           tag: ${{ github.ref_type == 'tag' && github.ref_name || '' }}
           user_name: 'eerzho'
           user_email: 'eerzho@gmail.com'
+
+  release:
+    needs: split
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/')
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Create monorepo release
+        run: gh release create ${{ github.ref_name }} --generate-notes
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create sub-repo releases
+        run: |
+          for repo in opentelemetry-auto-class opentelemetry-auto-class-symfony opentelemetry-auto-class-laravel; do
+            gh release create ${{ github.ref_name }} --generate-notes --repo eerzho/$repo
+          done
+        env:
+          GH_TOKEN: ${{ secrets.SPLIT_TOKEN }}
