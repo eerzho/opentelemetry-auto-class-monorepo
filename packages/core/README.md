@@ -106,6 +106,37 @@ class AuthService
 }
 ```
 
+### Without attributes
+
+You can register classes for tracing without using `#[Traceable]` — build the method map manually and pass it to `ClassInstrumentation::register()`:
+
+```php
+class OrderService
+{
+    public function create(array $items, int $priority, string $note): void {}
+
+    public function cancel(int $orderId): void {}
+
+    public function archive(int $orderId): void {}
+}
+```
+
+```php
+use OpenTelemetry\Contrib\Instrumentation\Class\ClassInstrumentation;
+
+ClassInstrumentation::register([
+    OrderService::class => [
+        // trace with arguments, skip 'priority' (position 1)
+        'create' => ['items' => 0, 'note' => 2],
+        // trace without capturing arguments
+        'cancel' => [],
+        // 'archive' is not listed — it will NOT be traced
+    ],
+]);
+```
+
+Each entry maps a class to its methods, and each method to its arguments (`parameter name => position`). Methods not listed are not traced. Arguments not listed are not captured.
+
 ## How it works
 
 Each traced method call produces a span:
