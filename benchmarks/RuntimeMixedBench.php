@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace OpenTelemetry\Contrib\Instrumentation\Class\Benchmarks;
+namespace Eerzho\Instrumentation\Class\Benchmarks;
 
-use OpenTelemetry\Contrib\Instrumentation\Class\Benchmarks\Fixtures\BenchStatus;
-use OpenTelemetry\Contrib\Instrumentation\Class\Benchmarks\Fixtures\BenchStringable;
-use OpenTelemetry\Contrib\Instrumentation\Class\ClassInstrumentation;
+use Eerzho\Instrumentation\Class\Benchmarks\Fixtures\BenchStatus;
+use Eerzho\Instrumentation\Class\Benchmarks\Fixtures\BenchStringable;
+use Eerzho\Instrumentation\Class\ClassInstrumentation;
 use PhpBench\Attributes as Bench;
 use stdClass;
 

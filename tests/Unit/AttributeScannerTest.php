@@ -2,22 +2,22 @@
 
 declare(strict_types=1);
 
-namespace OpenTelemetry\Contrib\Instrumentation\Class\Tests\Unit;
+namespace Eerzho\Instrumentation\Class\Tests\Unit;
 
-use OpenTelemetry\Contrib\Instrumentation\Class\Attribute\Arguments;
-use OpenTelemetry\Contrib\Instrumentation\Class\Attribute\Traceable;
-use OpenTelemetry\Contrib\Instrumentation\Class\AttributeScanner;
-use OpenTelemetry\Contrib\Instrumentation\Class\Tests\Fixtures\ArgumentsWithoutTraceable;
-use OpenTelemetry\Contrib\Instrumentation\Class\Tests\Fixtures\ExcludedArguments;
-use OpenTelemetry\Contrib\Instrumentation\Class\Tests\Fixtures\ExcludedMethods;
-use OpenTelemetry\Contrib\Instrumentation\Class\Tests\Fixtures\MixedVisibility;
-use OpenTelemetry\Contrib\Instrumentation\Class\Tests\Fixtures\MultipleArguments;
-use OpenTelemetry\Contrib\Instrumentation\Class\Tests\Fixtures\TraceableAbstractClass;
-use OpenTelemetry\Contrib\Instrumentation\Class\Tests\Fixtures\TraceableClass;
-use OpenTelemetry\Contrib\Instrumentation\Class\Tests\Fixtures\TraceableEnum;
-use OpenTelemetry\Contrib\Instrumentation\Class\Tests\Fixtures\TraceableInterface;
-use OpenTelemetry\Contrib\Instrumentation\Class\Tests\Fixtures\TraceableTrait;
-use OpenTelemetry\Contrib\Instrumentation\Class\Tests\Fixtures\WithoutTraceableClass;
+use Eerzho\Instrumentation\Class\Attribute\Arguments;
+use Eerzho\Instrumentation\Class\Attribute\Traceable;
+use Eerzho\Instrumentation\Class\AttributeScanner;
+use Eerzho\Instrumentation\Class\Tests\Fixtures\ArgumentsWithoutTraceable;
+use Eerzho\Instrumentation\Class\Tests\Fixtures\ExcludedArguments;
+use Eerzho\Instrumentation\Class\Tests\Fixtures\ExcludedMethods;
+use Eerzho\Instrumentation\Class\Tests\Fixtures\MixedVisibility;
+use Eerzho\Instrumentation\Class\Tests\Fixtures\MultipleArguments;
+use Eerzho\Instrumentation\Class\Tests\Fixtures\TraceableAbstractClass;
+use Eerzho\Instrumentation\Class\Tests\Fixtures\TraceableClass;
+use Eerzho\Instrumentation\Class\Tests\Fixtures\TraceableEnum;
+use Eerzho\Instrumentation\Class\Tests\Fixtures\TraceableInterface;
+use Eerzho\Instrumentation\Class\Tests\Fixtures\TraceableTrait;
+use Eerzho\Instrumentation\Class\Tests\Fixtures\WithoutTraceableClass;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use ReflectionException;

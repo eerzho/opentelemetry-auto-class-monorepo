@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace OpenTelemetry\Contrib\Instrumentation\Class\Tests\Fixtures;
+namespace Eerzho\Instrumentation\Class\Tests\Fixtures;
 
-use OpenTelemetry\Contrib\Instrumentation\Class\Attribute\Arguments;
+use Eerzho\Instrumentation\Class\Attribute\Arguments;
 
 final class ArgumentsWithoutTraceable
 {

@@ -2,30 +2,30 @@
 
 declare(strict_types=1);
 
-namespace OpenTelemetry\Contrib\Instrumentation\Class\Tests\Unit;
+namespace Eerzho\Instrumentation\Class\Tests\Unit;
 
 use ArrayObject;
+use Eerzho\Instrumentation\Class\AttributeScanner;
+use Eerzho\Instrumentation\Class\ClassInstrumentation;
+use Eerzho\Instrumentation\Class\Tests\Fixtures\ArgumentsWithoutTraceable;
+use Eerzho\Instrumentation\Class\Tests\Fixtures\ArrayArgument;
+use Eerzho\Instrumentation\Class\Tests\Fixtures\BackedEnumArgument;
+use Eerzho\Instrumentation\Class\Tests\Fixtures\ExcludedArguments;
+use Eerzho\Instrumentation\Class\Tests\Fixtures\ExcludedMethods;
+use Eerzho\Instrumentation\Class\Tests\Fixtures\MixedArgument;
+use Eerzho\Instrumentation\Class\Tests\Fixtures\MixedVisibility;
+use Eerzho\Instrumentation\Class\Tests\Fixtures\MultipleArguments;
+use Eerzho\Instrumentation\Class\Tests\Fixtures\NullableArgument;
+use Eerzho\Instrumentation\Class\Tests\Fixtures\ObjectArgument;
+use Eerzho\Instrumentation\Class\Tests\Fixtures\Status;
+use Eerzho\Instrumentation\Class\Tests\Fixtures\Stringable;
+use Eerzho\Instrumentation\Class\Tests\Fixtures\ThrowingMethod;
+use Eerzho\Instrumentation\Class\Tests\Fixtures\TraceableClass;
+use Eerzho\Instrumentation\Class\Tests\Fixtures\WithoutTraceableClass;
 use OpenTelemetry\API\Instrumentation\Configurator;
 use OpenTelemetry\API\Trace\SpanKind;
 use OpenTelemetry\API\Trace\StatusCode;
 use OpenTelemetry\Context\ScopeInterface;
-use OpenTelemetry\Contrib\Instrumentation\Class\AttributeScanner;
-use OpenTelemetry\Contrib\Instrumentation\Class\ClassInstrumentation;
-use OpenTelemetry\Contrib\Instrumentation\Class\Tests\Fixtures\ArgumentsWithoutTraceable;
-use OpenTelemetry\Contrib\Instrumentation\Class\Tests\Fixtures\ArrayArgument;
-use OpenTelemetry\Contrib\Instrumentation\Class\Tests\Fixtures\BackedEnumArgument;
-use OpenTelemetry\Contrib\Instrumentation\Class\Tests\Fixtures\ExcludedArguments;
-use OpenTelemetry\Contrib\Instrumentation\Class\Tests\Fixtures\ExcludedMethods;
-use OpenTelemetry\Contrib\Instrumentation\Class\Tests\Fixtures\MixedArgument;
-use OpenTelemetry\Contrib\Instrumentation\Class\Tests\Fixtures\MixedVisibility;
-use OpenTelemetry\Contrib\Instrumentation\Class\Tests\Fixtures\MultipleArguments;
-use OpenTelemetry\Contrib\Instrumentation\Class\Tests\Fixtures\NullableArgument;
-use OpenTelemetry\Contrib\Instrumentation\Class\Tests\Fixtures\ObjectArgument;
-use OpenTelemetry\Contrib\Instrumentation\Class\Tests\Fixtures\Status;
-use OpenTelemetry\Contrib\Instrumentation\Class\Tests\Fixtures\Stringable;
-use OpenTelemetry\Contrib\Instrumentation\Class\Tests\Fixtures\ThrowingMethod;
-use OpenTelemetry\Contrib\Instrumentation\Class\Tests\Fixtures\TraceableClass;
-use OpenTelemetry\Contrib\Instrumentation\Class\Tests\Fixtures\WithoutTraceableClass;
 use OpenTelemetry\SDK\Trace\ImmutableSpan;
 use OpenTelemetry\SDK\Trace\SpanExporter\InMemoryExporter;
 use OpenTelemetry\SDK\Trace\SpanProcessor\SimpleSpanProcessor;

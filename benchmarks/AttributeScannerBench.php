@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace OpenTelemetry\Contrib\Instrumentation\Class\Benchmarks;
+namespace Eerzho\Instrumentation\Class\Benchmarks;
 
-use OpenTelemetry\Contrib\Instrumentation\Class\AttributeScanner;
+use Eerzho\Instrumentation\Class\AttributeScanner;
 use PhpBench\Attributes as Bench;
 use ReflectionException;
 

@@ -2,21 +2,21 @@
 
 declare(strict_types=1);
 
-namespace OpenTelemetry\Contrib\Instrumentation\Class\Benchmarks;
+namespace Eerzho\Instrumentation\Class\Benchmarks;
 
-use OpenTelemetry\Contrib\Instrumentation\Class\AttributeScanner;
-use OpenTelemetry\Contrib\Instrumentation\Class\Benchmarks\Fixtures\ArrayArg;
-use OpenTelemetry\Contrib\Instrumentation\Class\Benchmarks\Fixtures\BackedEnumArg;
-use OpenTelemetry\Contrib\Instrumentation\Class\Benchmarks\Fixtures\BenchStatus;
-use OpenTelemetry\Contrib\Instrumentation\Class\Benchmarks\Fixtures\BenchStringable;
-use OpenTelemetry\Contrib\Instrumentation\Class\Benchmarks\Fixtures\MixedArgs;
-use OpenTelemetry\Contrib\Instrumentation\Class\Benchmarks\Fixtures\NoArgs;
-use OpenTelemetry\Contrib\Instrumentation\Class\Benchmarks\Fixtures\NullArg;
-use OpenTelemetry\Contrib\Instrumentation\Class\Benchmarks\Fixtures\ObjectNoToString;
-use OpenTelemetry\Contrib\Instrumentation\Class\Benchmarks\Fixtures\ObjectToString;
-use OpenTelemetry\Contrib\Instrumentation\Class\Benchmarks\Fixtures\ResourceArg;
-use OpenTelemetry\Contrib\Instrumentation\Class\Benchmarks\Fixtures\Scalars;
-use OpenTelemetry\Contrib\Instrumentation\Class\ClassInstrumentation;
+use Eerzho\Instrumentation\Class\AttributeScanner;
+use Eerzho\Instrumentation\Class\Benchmarks\Fixtures\ArrayArg;
+use Eerzho\Instrumentation\Class\Benchmarks\Fixtures\BackedEnumArg;
+use Eerzho\Instrumentation\Class\Benchmarks\Fixtures\BenchStatus;
+use Eerzho\Instrumentation\Class\Benchmarks\Fixtures\BenchStringable;
+use Eerzho\Instrumentation\Class\Benchmarks\Fixtures\MixedArgs;
+use Eerzho\Instrumentation\Class\Benchmarks\Fixtures\NoArgs;
+use Eerzho\Instrumentation\Class\Benchmarks\Fixtures\NullArg;
+use Eerzho\Instrumentation\Class\Benchmarks\Fixtures\ObjectNoToString;
+use Eerzho\Instrumentation\Class\Benchmarks\Fixtures\ObjectToString;
+use Eerzho\Instrumentation\Class\Benchmarks\Fixtures\ResourceArg;
+use Eerzho\Instrumentation\Class\Benchmarks\Fixtures\Scalars;
+use Eerzho\Instrumentation\Class\ClassInstrumentation;
 use PhpBench\Attributes as Bench;
 use ReflectionException;
 use stdClass;
