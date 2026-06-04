@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace OpenTelemetry\Contrib\Instrumentation\Class\Symfony;
+namespace Eerzho\Instrumentation\Class\Symfony;
 
+use Eerzho\Instrumentation\Class\AttributeScanner;
+use Eerzho\Instrumentation\Class\ClassInstrumentation;
 use Error;
-use OpenTelemetry\Contrib\Instrumentation\Class\AttributeScanner;
-use OpenTelemetry\Contrib\Instrumentation\Class\ClassInstrumentation;
 use OpenTelemetry\SDK\Sdk;
 use ReflectionException;
 use Symfony\Component\DependencyInjection\Compiler\CompilerPassInterface;

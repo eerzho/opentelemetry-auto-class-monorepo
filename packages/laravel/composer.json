@@ -35,13 +35,13 @@
   },
   "autoload": {
     "psr-4": {
-      "OpenTelemetry\\Contrib\\Instrumentation\\Class\\Laravel\\": "src/"
+      "Eerzho\\Instrumentation\\Class\\Laravel\\": "src/"
     }
   },
   "extra": {
     "laravel": {
       "providers": [
-        "OpenTelemetry\\Contrib\\Instrumentation\\Class\\Laravel\\TraceableServiceProvider"
+        "Eerzho\\Instrumentation\\Class\\Laravel\\TraceableServiceProvider"
       ]
     }
   },

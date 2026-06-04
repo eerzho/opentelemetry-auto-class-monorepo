@@ -1,6 +1,6 @@
 {
   "name": "eerzho/opentelemetry-auto-class-symfony",
-  "description": "Symfony bundle for automatic OpenTelemetry tracing via the #[Traceable] attribute",
+  "description": "Symfony integration for automatic OpenTelemetry tracing via the #[Traceable] attribute",
   "type": "symfony-bundle",
   "license": "MIT",
   "keywords": [
@@ -36,7 +36,7 @@
   },
   "autoload": {
     "psr-4": {
-      "OpenTelemetry\\Contrib\\Instrumentation\\Class\\Symfony\\": "src/"
+      "Eerzho\\Instrumentation\\Class\\Symfony\\": "src/"
     }
   },
   "config": {

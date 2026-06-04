@@ -21,7 +21,7 @@ Register the bundle:
 // config/bundles.php
 return [
     // ...
-    OpenTelemetry\Contrib\Instrumentation\Class\Symfony\TraceableBundle::class => ['all' => true],
+    Eerzho\Instrumentation\Class\Symfony\TraceableBundle::class => ['all' => true],
 ];
 ```
 
@@ -39,7 +39,7 @@ Add `#[Traceable]` to a class registered in the service container — all public
 ```php
 namespace App\Service;
 
-use OpenTelemetry\Contrib\Instrumentation\Class\Attribute\Traceable;
+use Eerzho\Instrumentation\Class\Attribute\Traceable;
 
 #[Traceable]
 class OrderService
@@ -65,7 +65,7 @@ Use the `exclude` parameter to skip specific methods from tracing:
 ```php
 namespace App\Service;
 
-use OpenTelemetry\Contrib\Instrumentation\Class\Attribute\Traceable;
+use Eerzho\Instrumentation\Class\Attribute\Traceable;
 
 #[Traceable(exclude: ['healthCheck', 'getVersion'])]
 class PaymentService
@@ -96,8 +96,8 @@ By default, all method arguments are captured as span attributes. Use `#[Argumen
 ```php
 namespace App\Service;
 
-use OpenTelemetry\Contrib\Instrumentation\Class\Attribute\Arguments;
-use OpenTelemetry\Contrib\Instrumentation\Class\Attribute\Traceable;
+use Eerzho\Instrumentation\Class\Attribute\Arguments;
+use Eerzho\Instrumentation\Class\Attribute\Traceable;
 
 #[Traceable]
 class AuthService

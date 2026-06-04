@@ -46,7 +46,7 @@ Add `#[Traceable]` to a class in the configured namespaces — all public method
 ```php
 namespace App\Services;
 
-use OpenTelemetry\Contrib\Instrumentation\Class\Attribute\Traceable;
+use Eerzho\Instrumentation\Class\Attribute\Traceable;
 
 #[Traceable]
 class OrderService
@@ -74,7 +74,7 @@ Use the `exclude` parameter to skip specific methods from tracing:
 ```php
 namespace App\Services;
 
-use OpenTelemetry\Contrib\Instrumentation\Class\Attribute\Traceable;
+use Eerzho\Instrumentation\Class\Attribute\Traceable;
 
 #[Traceable(exclude: ['healthCheck', 'getVersion'])]
 class PaymentService
@@ -105,8 +105,8 @@ By default, all method arguments are captured as span attributes. Use `#[Argumen
 ```php
 namespace App\Services;
 
-use OpenTelemetry\Contrib\Instrumentation\Class\Attribute\Arguments;
-use OpenTelemetry\Contrib\Instrumentation\Class\Attribute\Traceable;
+use Eerzho\Instrumentation\Class\Attribute\Arguments;
+use Eerzho\Instrumentation\Class\Attribute\Traceable;
 
 #[Traceable]
 class AuthService

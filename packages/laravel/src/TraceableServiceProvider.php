@@ -2,14 +2,14 @@
 
 declare(strict_types=1);
 
-namespace OpenTelemetry\Contrib\Instrumentation\Class\Laravel;
+namespace Eerzho\Instrumentation\Class\Laravel;
 
 use Composer\Autoload\ClassLoader;
+use Eerzho\Instrumentation\Class\AttributeScanner;
+use Eerzho\Instrumentation\Class\ClassInstrumentation;
 use Illuminate\Contracts\Config\Repository;
 use Illuminate\Contracts\Container\BindingResolutionException;
 use Illuminate\Support\ServiceProvider;
-use OpenTelemetry\Contrib\Instrumentation\Class\AttributeScanner;
-use OpenTelemetry\Contrib\Instrumentation\Class\ClassInstrumentation;
 use OpenTelemetry\SDK\Sdk;
 use ReflectionException;
 
