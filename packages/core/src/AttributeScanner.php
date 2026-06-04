@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace OpenTelemetry\Contrib\Instrumentation\Class;
+namespace Eerzho\Instrumentation\Class;
 
-use OpenTelemetry\Contrib\Instrumentation\Class\Attribute\Arguments;
-use OpenTelemetry\Contrib\Instrumentation\Class\Attribute\Traceable;
+use Eerzho\Instrumentation\Class\Attribute\Arguments;
+use Eerzho\Instrumentation\Class\Attribute\Traceable;
 use ReflectionClass;
 use ReflectionException;
 use ReflectionMethod;

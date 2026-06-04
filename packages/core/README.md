@@ -26,9 +26,9 @@ Requirements:
 Add `#[Traceable]` to a class — all public methods will be traced automatically:
 
 ```php
-use OpenTelemetry\Contrib\Instrumentation\Class\Attribute\Traceable;
-use OpenTelemetry\Contrib\Instrumentation\Class\AttributeScanner;
-use OpenTelemetry\Contrib\Instrumentation\Class\ClassInstrumentation;
+use Eerzho\Instrumentation\Class\Attribute\Traceable;
+use Eerzho\Instrumentation\Class\AttributeScanner;
+use Eerzho\Instrumentation\Class\ClassInstrumentation;
 
 #[Traceable]
 class OrderService
@@ -57,7 +57,7 @@ ClassInstrumentation::register($map);
 Use the `exclude` parameter to skip specific methods from tracing:
 
 ```php
-use OpenTelemetry\Contrib\Instrumentation\Class\Attribute\Traceable;
+use Eerzho\Instrumentation\Class\Attribute\Traceable;
 
 #[Traceable(exclude: ['healthCheck', 'getVersion'])]
 class PaymentService
@@ -86,8 +86,8 @@ class PaymentService
 By default, all method arguments are captured as span attributes. Use `#[Arguments(exclude: [...])]` on a method to hide sensitive parameters:
 
 ```php
-use OpenTelemetry\Contrib\Instrumentation\Class\Attribute\Arguments;
-use OpenTelemetry\Contrib\Instrumentation\Class\Attribute\Traceable;
+use Eerzho\Instrumentation\Class\Attribute\Arguments;
+use Eerzho\Instrumentation\Class\Attribute\Traceable;
 
 #[Traceable]
 class AuthService
@@ -122,7 +122,7 @@ class OrderService
 ```
 
 ```php
-use OpenTelemetry\Contrib\Instrumentation\Class\ClassInstrumentation;
+use Eerzho\Instrumentation\Class\ClassInstrumentation;
 
 ClassInstrumentation::register([
     OrderService::class => [

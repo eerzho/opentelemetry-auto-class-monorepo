@@ -35,15 +35,15 @@
   },
   "autoload": {
     "psr-4": {
-      "OpenTelemetry\\Contrib\\Instrumentation\\Class\\": "packages/core/src/",
-      "OpenTelemetry\\Contrib\\Instrumentation\\Class\\Symfony\\": "packages/symfony/src/",
-      "OpenTelemetry\\Contrib\\Instrumentation\\Class\\Laravel\\": "packages/laravel/src/"
+      "Eerzho\\Instrumentation\\Class\\": "packages/core/src/",
+      "Eerzho\\Instrumentation\\Class\\Symfony\\": "packages/symfony/src/",
+      "Eerzho\\Instrumentation\\Class\\Laravel\\": "packages/laravel/src/"
     }
   },
   "autoload-dev": {
     "psr-4": {
-      "OpenTelemetry\\Contrib\\Instrumentation\\Class\\Tests\\": "tests/",
-      "OpenTelemetry\\Contrib\\Instrumentation\\Class\\Benchmarks\\": "benchmarks/"
+      "Eerzho\\Instrumentation\\Class\\Tests\\": "tests/",
+      "Eerzho\\Instrumentation\\Class\\Benchmarks\\": "benchmarks/"
     }
   },
   "config": {

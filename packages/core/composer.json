@@ -37,13 +37,13 @@
   },
   "autoload": {
     "psr-4": {
-      "OpenTelemetry\\Contrib\\Instrumentation\\Class\\": "src/"
+      "Eerzho\\Instrumentation\\Class\\": "src/"
     }
   },
   "autoload-dev": {
     "psr-4": {
-      "OpenTelemetry\\Contrib\\Instrumentation\\Class\\Tests\\": "tests/",
-      "OpenTelemetry\\Contrib\\Instrumentation\\Class\\Benchmarks\\": "benchmarks/"
+      "Eerzho\\Instrumentation\\Class\\Tests\\": "tests/",
+      "Eerzho\\Instrumentation\\Class\\Benchmarks\\": "benchmarks/"
     }
   },
   "config": {

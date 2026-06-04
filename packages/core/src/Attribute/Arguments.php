@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace OpenTelemetry\Contrib\Instrumentation\Class\Attribute;
+namespace Eerzho\Instrumentation\Class\Attribute;
 
 use Attribute;
 
