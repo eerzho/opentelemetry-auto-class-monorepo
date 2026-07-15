@@ -4,13 +4,13 @@ declare(strict_types=1);
 
 namespace Eerzho\Instrumentation\Class\Tests\Fixtures;
 
-use Eerzho\Instrumentation\Class\Attribute\Arguments;
-use Eerzho\Instrumentation\Class\Attribute\Traceable;
+use Eerzho\Instrumentation\Class\Attribute\Trace;
+use Eerzho\Instrumentation\Class\Attribute\TraceArguments;
 
-#[Traceable]
+#[Trace]
 final class ExcludedArguments
 {
-    #[Arguments(exclude: ['second'])]
+    #[TraceArguments(exclude: ['second'])]
     public function process(string $first, string $second, string $third): void
     {
     }

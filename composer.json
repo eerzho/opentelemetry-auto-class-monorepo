@@ -1,6 +1,6 @@
 {
   "name": "eerzho/opentelemetry-auto-class-monorepo",
-  "description": "Monorepo for automatic OpenTelemetry tracing via the #[Traceable] attribute",
+  "description": "Monorepo for automatic OpenTelemetry tracing via the #[Trace] attribute",
   "type": "project",
   "license": "MIT",
   "authors": [

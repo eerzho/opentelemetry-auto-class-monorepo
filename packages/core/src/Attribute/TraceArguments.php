@@ -7,7 +7,7 @@ namespace Eerzho\Instrumentation\Class\Attribute;
 use Attribute;
 
 #[Attribute(Attribute::TARGET_METHOD)]
-final readonly class Arguments
+final readonly class TraceArguments
 {
     /**
      * @param list<string> $exclude

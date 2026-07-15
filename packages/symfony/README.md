@@ -5,7 +5,7 @@
 [![PHP](https://img.shields.io/packagist/dependency-v/eerzho/opentelemetry-auto-class-symfony/php)](https://packagist.org/packages/eerzho/opentelemetry-auto-class-symfony)
 [![License](https://img.shields.io/packagist/l/eerzho/opentelemetry-auto-class-symfony)](https://packagist.org/packages/eerzho/opentelemetry-auto-class-symfony)
 
-Symfony integration for automatic OpenTelemetry tracing of PHP methods via the `#[Traceable]` attribute. All services with the attribute in the container are instrumented automatically using the `ext-opentelemetry` hook API.
+Symfony integration for automatic OpenTelemetry tracing of PHP methods via the `#[Trace]` attribute. All services with the attribute in the container are instrumented automatically using the `ext-opentelemetry` hook API.
 
 This is a read-only sub-split. Please open issues and pull requests in the [monorepo](https://github.com/eerzho/opentelemetry-auto-class-monorepo).
 
@@ -21,7 +21,7 @@ Register the bundle:
 // config/bundles.php
 return [
     // ...
-    Eerzho\Instrumentation\Class\Symfony\TraceableBundle::class => ['all' => true],
+    Eerzho\Instrumentation\Class\Symfony\AutoClassBundle::class => ['all' => true],
 ];
 ```
 
@@ -34,14 +34,14 @@ Requirements:
 
 ### Basic
 
-Add `#[Traceable]` to a class registered in the service container — all public methods will be traced automatically:
+Add `#[Trace]` to a class registered in the service container — all public methods will be traced automatically:
 
 ```php
 namespace App\Service;
 
-use Eerzho\Instrumentation\Class\Attribute\Traceable;
+use Eerzho\Instrumentation\Class\Attribute\Trace;
 
-#[Traceable]
+#[Trace]
 class OrderService
 {
     public function create(array $items): void
@@ -65,9 +65,9 @@ Use the `exclude` parameter to skip specific methods from tracing:
 ```php
 namespace App\Service;
 
-use Eerzho\Instrumentation\Class\Attribute\Traceable;
+use Eerzho\Instrumentation\Class\Attribute\Trace;
 
-#[Traceable(exclude: ['healthCheck', 'getVersion'])]
+#[Trace(exclude: ['healthCheck', 'getVersion'])]
 class PaymentService
 {
     public function charge(int $amount, string $currency): void
@@ -91,18 +91,18 @@ class PaymentService
 
 ### Exclude arguments
 
-By default, all method arguments are captured as span attributes. Use `#[Arguments(exclude: [...])]` on a method to hide sensitive parameters:
+By default, all method arguments are captured as span attributes. Use `#[TraceArguments(exclude: [...])]` on a method to hide sensitive parameters:
 
 ```php
 namespace App\Service;
 
-use Eerzho\Instrumentation\Class\Attribute\Arguments;
-use Eerzho\Instrumentation\Class\Attribute\Traceable;
+use Eerzho\Instrumentation\Class\Attribute\TraceArguments;
+use Eerzho\Instrumentation\Class\Attribute\Trace;
 
-#[Traceable]
+#[Trace]
 class AuthService
 {
-    #[Arguments(exclude: ['password', 'token'])]
+    #[TraceArguments(exclude: ['password', 'token'])]
     public function login(string $email, string $password, string $token): void
     {
         // span captures "email" attribute only
@@ -118,7 +118,7 @@ class AuthService
 
 ## How it works
 
-1. During container compilation, the bundle scans all service definitions for `#[Traceable]` attribute
+1. During container compilation, the bundle scans all service definitions for `#[Trace]` attribute
 2. Builds a method map and stores it as a container parameter
 3. On kernel boot, registers `ext-opentelemetry` hooks for matched methods
 
