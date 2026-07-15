@@ -9,6 +9,8 @@ use Eerzho\Instrumentation\Class\Attribute\TraceArguments;
 use Eerzho\Instrumentation\Class\AttributeScanner;
 use Eerzho\Instrumentation\Class\Tests\Fixtures\ExcludedArguments;
 use Eerzho\Instrumentation\Class\Tests\Fixtures\ExcludedMethods;
+use Eerzho\Instrumentation\Class\Tests\Fixtures\IncludedArguments;
+use Eerzho\Instrumentation\Class\Tests\Fixtures\IncludedMethods;
 use Eerzho\Instrumentation\Class\Tests\Fixtures\MixedVisibility;
 use Eerzho\Instrumentation\Class\Tests\Fixtures\MultipleArguments;
 use Eerzho\Instrumentation\Class\Tests\Fixtures\TraceArgumentsWithoutTrace;
@@ -174,6 +176,37 @@ final class AttributeScannerTest extends TestCase
 
         self::assertSame([
             ExcludedArguments::class => [
+                'process' => [
+                    'first' => 0,
+                    'third' => 2,
+                ],
+            ],
+        ], $result);
+    }
+
+    /**
+     * @throws ReflectionException
+     */
+    public function testScanIncludedMethods(): void
+    {
+        $result = AttributeScanner::scan([IncludedMethods::class]);
+
+        self::assertSame([
+            IncludedMethods::class => [
+                'visible' => [],
+            ],
+        ], $result);
+    }
+
+    /**
+     * @throws ReflectionException
+     */
+    public function testScanIncludedArguments(): void
+    {
+        $result = AttributeScanner::scan([IncludedArguments::class]);
+
+        self::assertSame([
+            IncludedArguments::class => [
                 'process' => [
                     'first' => 0,
                     'third' => 2,
