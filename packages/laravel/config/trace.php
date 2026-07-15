@@ -8,7 +8,7 @@ return [
     | Namespaces
     |--------------------------------------------------------------------------
     |
-    | List of namespaces to scan for #[Traceable] attribute.
+    | List of namespaces to scan for #[Trace] attribute.
     | Only classes within these namespaces will be checked.
     |
     */

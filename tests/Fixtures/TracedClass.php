@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace Eerzho\Instrumentation\Class\Tests\Fixtures;
 
-use Eerzho\Instrumentation\Class\Attribute\Traceable;
+use Eerzho\Instrumentation\Class\Attribute\Trace;
 
-#[Traceable]
-final class TraceableClass
+#[Trace]
+final class TracedClass
 {
     public function greet(string $name): void
     {

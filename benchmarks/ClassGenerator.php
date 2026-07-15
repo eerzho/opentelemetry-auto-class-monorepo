@@ -39,7 +39,7 @@ trait ClassGenerator
 
             if (!class_exists($className)) {
                 eval("
-                    #[\\Eerzho\\Instrumentation\\Class\\Attribute\\Traceable]
+                    #[\\Eerzho\\Instrumentation\\Class\\Attribute\\Trace]
                     class {$className} {
                         public function findById(int \$id): void {}
                         public function findByEmail(string \$email): void {}
@@ -48,7 +48,7 @@ trait ClassGenerator
                         public function delete(int \$id): void {}
                         public function import(array \$items, bool \$force, ?\\DateTimeImmutable \$scheduledAt = null): void {}
                         public function export(string \$format, array \$filters): string { return ''; }
-                        #[\\Eerzho\\Instrumentation\\Class\\Attribute\\Arguments(exclude: ['password', 'token'])]
+                        #[\\Eerzho\\Instrumentation\\Class\\Attribute\\TraceArguments(exclude: ['password', 'token'])]
                         public function authenticate(string \$login, string \$password, string \$token): bool { return true; }
                     }
                 ");
