@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Eerzho\Instrumentation\Class;
 
 use BackedEnum;
+use Eerzho\Instrumentation\Class\Attribute\TraceProperties;
 use JsonException;
 use OpenTelemetry\API\Instrumentation\CachedInstrumentation;
 use OpenTelemetry\API\Trace\Span;
@@ -13,16 +14,22 @@ use OpenTelemetry\API\Trace\StatusCode;
 use OpenTelemetry\Context\Context;
 use OpenTelemetry\SemConv\Attributes\CodeAttributes;
 use OpenTelemetry\SemConv\Version;
+use ReflectionObject;
+use ReflectionProperty;
 use Throwable;
 
 use function array_key_exists;
+use function assert;
 use function get_class;
 use function gettype;
+use function in_array;
 use function is_array;
 use function is_object;
 use function is_scalar;
 use function json_encode;
+use function method_exists;
 use function OpenTelemetry\Instrumentation\hook;
+use function spl_object_id;
 
 final class ClassInstrumentation
 {
@@ -76,7 +83,9 @@ final class ClassInstrumentation
 
                 foreach ($positionToName as $position => $name) {
                     if (array_key_exists($position, $params)) {
-                        $builder->setAttribute($name, self::serializeValue($params[$position]));
+                        foreach (self::serialize($name, $params[$position]) as $key => $value) {
+                            $builder->setAttribute($key, $value);
+                        }
                     }
                 }
 
@@ -107,32 +116,86 @@ final class ClassInstrumentation
         );
     }
 
-    private static function serializeValue(mixed $value): bool|float|int|string
+    /**
+     * @param array<int, true> $seen
+     *
+     * @return array<string, bool|float|int|string>
+     */
+    private static function serialize(string $key, mixed $value, array $seen = []): array
     {
         if (is_scalar($value)) {
-            return $value;
+            return [$key => $value];
         }
 
         if ($value === null) {
-            return 'null';
+            return [$key => 'null'];
         }
 
         if ($value instanceof BackedEnum) {
-            return $value->value;
+            return [$key => $value->value];
         }
 
         if (is_object($value)) {
-            return method_exists($value, '__toString') ? (string) $value : get_class($value);
+            try {
+                $reflection = new ReflectionObject($value);
+                $attributes = $reflection->getAttributes(TraceProperties::class);
+
+                if ($attributes !== []) {
+                    $id = spl_object_id($value);
+                    if (array_key_exists($id, $seen)) {
+                        return [$key => get_class($value)];
+                    }
+                    $seen[$id] = true;
+
+                    $attribute = $attributes[0]->newInstance();
+                    assert($attribute instanceof TraceProperties);
+
+                    $result = [];
+                    foreach ($reflection->getProperties(ReflectionProperty::IS_PUBLIC) as $property) {
+                        $name = $property->getName();
+                        if (!self::isAllowed($name, $attribute->include, $attribute->exclude)) {
+                            continue;
+                        }
+                        if (!$property->isInitialized($value)) {
+                            $result[$key . '.' . $name] = 'uninitialized';
+
+                            continue;
+                        }
+                        $result += self::serialize($key . '.' . $name, $property->getValue($value), $seen);
+                    }
+
+                    return $result;
+                }
+
+                if (method_exists($value, '__toString')) {
+                    return [$key => (string) $value];
+                }
+            } catch (Throwable) {
+            }
+
+            return [$key => get_class($value)];
         }
 
         if (is_array($value)) {
             try {
-                return (string) json_encode($value, JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR);
+                return [$key => (string) json_encode($value, JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR)];
             } catch (JsonException) {
-                return 'array';
             }
         }
 
-        return gettype($value);
+        return [$key => gettype($value)];
+    }
+
+    /**
+     * @param list<string> $include
+     * @param list<string> $exclude
+     */
+    private static function isAllowed(string $name, array $include, array $exclude): bool
+    {
+        if ($include !== [] && !in_array($name, $include, true)) {
+            return false;
+        }
+
+        return !in_array($name, $exclude, true);
     }
 }

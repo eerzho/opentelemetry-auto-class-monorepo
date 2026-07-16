@@ -41,5 +41,6 @@ return (new PhpCsFixer\Config())
         'void_return' => true,
         'phpdoc_to_comment' => false,
         'trailing_comma_in_multiline' => ['elements' => ['arguments', 'arrays', 'match', 'parameters']],
+        'php_unit_test_class_requires_covers' => false,
     ])
     ->setFinder($finder);

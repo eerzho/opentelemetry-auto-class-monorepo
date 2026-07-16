@@ -7,21 +7,31 @@ namespace Eerzho\Instrumentation\Class\Tests\Unit;
 use ArrayObject;
 use Eerzho\Instrumentation\Class\AttributeScanner;
 use Eerzho\Instrumentation\Class\ClassInstrumentation;
+use Eerzho\Instrumentation\Class\Tests\Fixtures\AddressDto;
 use Eerzho\Instrumentation\Class\Tests\Fixtures\ArrayArgument;
 use Eerzho\Instrumentation\Class\Tests\Fixtures\BackedEnumArgument;
+use Eerzho\Instrumentation\Class\Tests\Fixtures\DtoService;
 use Eerzho\Instrumentation\Class\Tests\Fixtures\ExcludedArguments;
 use Eerzho\Instrumentation\Class\Tests\Fixtures\ExcludedMethods;
+use Eerzho\Instrumentation\Class\Tests\Fixtures\FilteredDto;
+use Eerzho\Instrumentation\Class\Tests\Fixtures\IncludedPropertiesDto;
 use Eerzho\Instrumentation\Class\Tests\Fixtures\MixedArgument;
 use Eerzho\Instrumentation\Class\Tests\Fixtures\MixedVisibility;
 use Eerzho\Instrumentation\Class\Tests\Fixtures\MultipleArguments;
+use Eerzho\Instrumentation\Class\Tests\Fixtures\NodeDto;
 use Eerzho\Instrumentation\Class\Tests\Fixtures\NullableArgument;
 use Eerzho\Instrumentation\Class\Tests\Fixtures\ObjectArgument;
+use Eerzho\Instrumentation\Class\Tests\Fixtures\PlainValue;
 use Eerzho\Instrumentation\Class\Tests\Fixtures\Status;
 use Eerzho\Instrumentation\Class\Tests\Fixtures\Stringable;
 use Eerzho\Instrumentation\Class\Tests\Fixtures\ThrowingMethod;
+use Eerzho\Instrumentation\Class\Tests\Fixtures\ThrowingStringable;
 use Eerzho\Instrumentation\Class\Tests\Fixtures\TraceArgumentsWithoutTrace;
 use Eerzho\Instrumentation\Class\Tests\Fixtures\TracedClass;
+use Eerzho\Instrumentation\Class\Tests\Fixtures\UninitializedDto;
+use Eerzho\Instrumentation\Class\Tests\Fixtures\UserDto;
 use Eerzho\Instrumentation\Class\Tests\Fixtures\WithoutTraceClass;
+use Eerzho\Instrumentation\Class\Tests\Fixtures\WrapperDto;
 use OpenTelemetry\API\Instrumentation\Configurator;
 use OpenTelemetry\API\Trace\SpanKind;
 use OpenTelemetry\API\Trace\StatusCode;
@@ -30,7 +40,6 @@ use OpenTelemetry\SDK\Trace\ImmutableSpan;
 use OpenTelemetry\SDK\Trace\SpanExporter\InMemoryExporter;
 use OpenTelemetry\SDK\Trace\SpanProcessor\SimpleSpanProcessor;
 use OpenTelemetry\SDK\Trace\TracerProvider;
-use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use ReflectionException;
 use RuntimeException;
@@ -39,7 +48,6 @@ use stdClass;
 /**
  * @internal
  */
-#[CoversClass(ClassInstrumentation::class)]
 final class ClassInstrumentationTest extends TestCase
 {
     /** @var ArrayObject<int, ImmutableSpan> */
@@ -437,5 +445,154 @@ final class ClassInstrumentationTest extends TestCase
         self::assertSame('exception', $events[0]->getName());
         self::assertSame('RuntimeException', $events[0]->getAttributes()->get('exception.type'));
         self::assertSame('something went wrong', $events[0]->getAttributes()->get('exception.message'));
+    }
+
+    /**
+     * @throws ReflectionException
+     */
+    public function testRegisterExpandsTraceProperties(): void
+    {
+        $map = AttributeScanner::scan([DtoService::class]);
+        ClassInstrumentation::register($map);
+
+        (new DtoService())->handle(new UserDto(7, 'Ann', new AddressDto('Almaty', '050000')));
+
+        self::assertCount(1, $this->storage);
+
+        $span = $this->storage[0];
+        self::assertInstanceOf(ImmutableSpan::class, $span);
+
+        $attributes = $span->getAttributes();
+        self::assertSame(7, $attributes->get('dto.id'));
+        self::assertSame('Ann', $attributes->get('dto.name'));
+        self::assertSame('Almaty', $attributes->get('dto.address.city'));
+        self::assertSame('050000', $attributes->get('dto.address.zip'));
+        // private properties are not expanded
+        self::assertFalse($attributes->has('dto.passwordHash'));
+    }
+
+    /**
+     * @throws ReflectionException
+     */
+    public function testRegisterFiltersTraceProperties(): void
+    {
+        $map = AttributeScanner::scan([DtoService::class]);
+        ClassInstrumentation::register($map);
+
+        (new DtoService())->handle(new FilteredDto('a@b.c', 'secret-token'));
+
+        self::assertCount(1, $this->storage);
+
+        $span = $this->storage[0];
+        self::assertInstanceOf(ImmutableSpan::class, $span);
+
+        $attributes = $span->getAttributes();
+        self::assertSame('a@b.c', $attributes->get('dto.email'));
+        self::assertFalse($attributes->has('dto.token'));
+    }
+
+    /**
+     * @throws ReflectionException
+     */
+    public function testRegisterHandlesCyclicTraceProperties(): void
+    {
+        $map = AttributeScanner::scan([DtoService::class]);
+        ClassInstrumentation::register($map);
+
+        $node = new NodeDto(1);
+        $node->next = $node;
+        (new DtoService())->handle($node);
+
+        self::assertCount(1, $this->storage);
+
+        $span = $this->storage[0];
+        self::assertInstanceOf(ImmutableSpan::class, $span);
+
+        $attributes = $span->getAttributes();
+        self::assertSame(1, $attributes->get('dto.id'));
+        // cycle is broken: the revisited object degrades to its class name
+        self::assertSame(NodeDto::class, $attributes->get('dto.next'));
+    }
+
+    /**
+     * @throws ReflectionException
+     */
+    public function testRegisterFallsBackForPlainNestedObject(): void
+    {
+        $map = AttributeScanner::scan([DtoService::class]);
+        ClassInstrumentation::register($map);
+
+        (new DtoService())->handle(new WrapperDto(new PlainValue('x')));
+
+        self::assertCount(1, $this->storage);
+
+        $span = $this->storage[0];
+        self::assertInstanceOf(ImmutableSpan::class, $span);
+
+        $attributes = $span->getAttributes();
+        // no #[TraceProperties] on PlainValue -> falls back to class name
+        self::assertSame(PlainValue::class, $attributes->get('dto.inner'));
+    }
+
+    /**
+     * @throws ReflectionException
+     */
+    public function testRegisterSkipsUninitializedProperty(): void
+    {
+        $map = AttributeScanner::scan([DtoService::class]);
+        ClassInstrumentation::register($map);
+
+        (new DtoService())->handle(new UninitializedDto('Bob'));
+
+        self::assertCount(1, $this->storage);
+
+        $span = $this->storage[0];
+        self::assertInstanceOf(ImmutableSpan::class, $span);
+
+        $attributes = $span->getAttributes();
+        // initialized property is captured, uninitialized one gets the "uninitialized" marker (no crash)
+        self::assertSame('Bob', $attributes->get('dto.name'));
+        self::assertSame('uninitialized', $attributes->get('dto.ready'));
+    }
+
+    /**
+     * @throws ReflectionException
+     */
+    public function testRegisterDegradesWhenToStringThrows(): void
+    {
+        $map = AttributeScanner::scan([DtoService::class]);
+        ClassInstrumentation::register($map);
+
+        (new DtoService())->handle(new ThrowingStringable());
+
+        self::assertCount(1, $this->storage);
+
+        $span = $this->storage[0];
+        self::assertInstanceOf(ImmutableSpan::class, $span);
+
+        $attributes = $span->getAttributes();
+        // __toString() throws -> degrades to class name, never propagates to the traced method
+        self::assertSame(ThrowingStringable::class, $attributes->get('dto'));
+    }
+
+    /**
+     * @throws ReflectionException
+     */
+    public function testRegisterIncludesOnlyAllowlistedProperties(): void
+    {
+        $map = AttributeScanner::scan([DtoService::class]);
+        ClassInstrumentation::register($map);
+
+        (new DtoService())->handle(new IncludedPropertiesDto(7, 'Ann'));
+
+        self::assertCount(1, $this->storage);
+
+        $span = $this->storage[0];
+        self::assertInstanceOf(ImmutableSpan::class, $span);
+
+        $attributes = $span->getAttributes();
+        self::assertSame(7, $attributes->get('dto.id'));
+        // "name" is not in the include allowlist
+        self::assertFalse($attributes->has('dto.name'));
     }
 }
