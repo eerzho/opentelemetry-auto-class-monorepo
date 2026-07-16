@@ -91,21 +91,21 @@ jobs:
           tools: composer:v2
           coverage: none
 
-      - uses: ramsey/composer-install@v3
-
-      - name: Benchmark PR branch
-        run: vendor/bin/phpbench run --report=default --progress=none --tag=pr
-
       - name: Checkout base branch
         run: git checkout ${{ github.event.pull_request.base.sha }}
 
       - uses: ramsey/composer-install@v3
 
       - name: Benchmark base branch
-        run: vendor/bin/phpbench run --report=default --progress=none --tag=base
+        run: vendor/bin/phpbench run --progress=none --tag=base
 
-      - name: Compare
-        run: vendor/bin/phpbench report --ref=pr --baseline=base --report=default
+      - name: Checkout PR branch
+        run: git checkout ${{ github.event.pull_request.head.sha }}
+
+      - uses: ramsey/composer-install@v3
+
+      - name: Benchmark PR branch and compare with base
+        run: vendor/bin/phpbench run --report=default --progress=none --ref=base
 
   split:
     needs: test
