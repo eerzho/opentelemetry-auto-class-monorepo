@@ -52,38 +52,25 @@ ClassInstrumentation::register($map);
 > For Laravel and Symfony, use the framework integrations that handle class discovery automatically:
 > [opentelemetry-auto-class-laravel](https://github.com/eerzho/opentelemetry-auto-class-laravel) / [opentelemetry-auto-class-symfony](https://github.com/eerzho/opentelemetry-auto-class-symfony)
 
-### Exclude methods
+### Filtering methods (`include` / `exclude`)
 
-Use the `exclude` parameter to skip specific methods from tracing:
+`#[Trace]` traces all public methods by default. Narrow this down with `include` (allowlist) and/or `exclude` (denylist):
 
 ```php
 use Eerzho\Instrumentation\Class\Attribute\Trace;
 
+// Trace everything except these methods
 #[Trace(exclude: ['healthCheck', 'getVersion'])]
-class PaymentService
-{
-    public function charge(int $amount, string $currency): void
-    {
-        // traced
-    }
+class PaymentService { /* ... */ }
 
-    public function healthCheck(): bool
-    {
-        // NOT traced
-        return true;
-    }
-
-    public function getVersion(): string
-    {
-        // NOT traced
-        return '1.0.0';
-    }
-}
+// Trace only these methods
+#[Trace(include: ['charge', 'refund'])]
+class BillingService { /* ... */ }
 ```
 
-### Exclude arguments
+### Filtering arguments (`include` / `exclude`)
 
-By default, all method arguments are captured as span attributes. Use `#[TraceArguments(exclude: [...])]` on a method to hide sensitive parameters:
+By default, all arguments of a traced method are captured as span attributes. Add `#[TraceArguments]` to a method to filter them — for example to hide sensitive parameters:
 
 ```php
 use Eerzho\Instrumentation\Class\Attribute\TraceArguments;
@@ -92,19 +79,33 @@ use Eerzho\Instrumentation\Class\Attribute\Trace;
 #[Trace]
 class AuthService
 {
+    // Capture everything except "password" and "token"
     #[TraceArguments(exclude: ['password', 'token'])]
-    public function login(string $email, string $password, string $token): void
-    {
-        // span captures "email" attribute only
-        // "password" and "token" are excluded
-    }
+    public function login(string $email, string $password, string $token): void {}
+
+    // Capture only "orderId"
+    #[TraceArguments(include: ['orderId'])]
+    public function pay(int $orderId, string $cardNumber): void {}
 
     public function logout(int $userId): void
     {
-        // span captures "userId" attribute (no exclusions)
+        // no #[TraceArguments] → "userId" is captured
     }
 }
 ```
+
+### How `include` and `exclude` combine
+
+Both `#[Trace]` (methods) and `#[TraceArguments]` (arguments) follow the same rules:
+
+| `include` | `exclude` | Result                                    |
+|-----------|-----------|-------------------------------------------|
+| `[]`      | `[]`      | Everything (default)                      |
+| `[a, b]`  | `[]`      | Only `a` and `b`                          |
+| `[]`      | `[a]`     | Everything except `a`                     |
+| `[a, b]`  | `[b]`     | Only `a` — **`exclude` wins on conflict** |
+
+An empty `include` means "no allowlist" (trace everything), **not** "trace nothing".
 
 ### Without attributes
 
