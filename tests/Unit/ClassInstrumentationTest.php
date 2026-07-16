@@ -14,6 +14,7 @@ use Eerzho\Instrumentation\Class\Tests\Fixtures\DtoService;
 use Eerzho\Instrumentation\Class\Tests\Fixtures\ExcludedArguments;
 use Eerzho\Instrumentation\Class\Tests\Fixtures\ExcludedMethods;
 use Eerzho\Instrumentation\Class\Tests\Fixtures\FilteredDto;
+use Eerzho\Instrumentation\Class\Tests\Fixtures\IncludedPropertiesDto;
 use Eerzho\Instrumentation\Class\Tests\Fixtures\MixedArgument;
 use Eerzho\Instrumentation\Class\Tests\Fixtures\MixedVisibility;
 use Eerzho\Instrumentation\Class\Tests\Fixtures\MultipleArguments;
@@ -24,6 +25,7 @@ use Eerzho\Instrumentation\Class\Tests\Fixtures\PlainValue;
 use Eerzho\Instrumentation\Class\Tests\Fixtures\Status;
 use Eerzho\Instrumentation\Class\Tests\Fixtures\Stringable;
 use Eerzho\Instrumentation\Class\Tests\Fixtures\ThrowingMethod;
+use Eerzho\Instrumentation\Class\Tests\Fixtures\ThrowingStringable;
 use Eerzho\Instrumentation\Class\Tests\Fixtures\TraceArgumentsWithoutTrace;
 use Eerzho\Instrumentation\Class\Tests\Fixtures\TracedClass;
 use Eerzho\Instrumentation\Class\Tests\Fixtures\UninitializedDto;
@@ -455,7 +457,7 @@ final class ClassInstrumentationTest extends TestCase
         $map = AttributeScanner::scan([DtoService::class]);
         ClassInstrumentation::register($map);
 
-        (new DtoService())->expand(new UserDto(7, 'Ann', new AddressDto('Almaty', '050000')));
+        (new DtoService())->handle(new UserDto(7, 'Ann', new AddressDto('Almaty', '050000')));
 
         self::assertCount(1, $this->storage);
 
@@ -463,12 +465,12 @@ final class ClassInstrumentationTest extends TestCase
         self::assertInstanceOf(ImmutableSpan::class, $span);
 
         $attributes = $span->getAttributes();
-        self::assertSame(7, $attributes->get('user.id'));
-        self::assertSame('Ann', $attributes->get('user.name'));
-        self::assertSame('Almaty', $attributes->get('user.address.city'));
-        self::assertSame('050000', $attributes->get('user.address.zip'));
+        self::assertSame(7, $attributes->get('dto.id'));
+        self::assertSame('Ann', $attributes->get('dto.name'));
+        self::assertSame('Almaty', $attributes->get('dto.address.city'));
+        self::assertSame('050000', $attributes->get('dto.address.zip'));
         // private properties are not expanded
-        self::assertFalse($attributes->has('user.passwordHash'));
+        self::assertFalse($attributes->has('dto.passwordHash'));
     }
 
     /**
@@ -479,7 +481,7 @@ final class ClassInstrumentationTest extends TestCase
         $map = AttributeScanner::scan([DtoService::class]);
         ClassInstrumentation::register($map);
 
-        (new DtoService())->filtered(new FilteredDto('a@b.c', 'secret-token'));
+        (new DtoService())->handle(new FilteredDto('a@b.c', 'secret-token'));
 
         self::assertCount(1, $this->storage);
 
@@ -501,7 +503,7 @@ final class ClassInstrumentationTest extends TestCase
 
         $node = new NodeDto(1);
         $node->next = $node;
-        (new DtoService())->cyclic($node);
+        (new DtoService())->handle($node);
 
         self::assertCount(1, $this->storage);
 
@@ -509,9 +511,9 @@ final class ClassInstrumentationTest extends TestCase
         self::assertInstanceOf(ImmutableSpan::class, $span);
 
         $attributes = $span->getAttributes();
-        self::assertSame(1, $attributes->get('node.id'));
+        self::assertSame(1, $attributes->get('dto.id'));
         // cycle is broken: the revisited object degrades to its class name
-        self::assertSame(NodeDto::class, $attributes->get('node.next'));
+        self::assertSame(NodeDto::class, $attributes->get('dto.next'));
     }
 
     /**
@@ -522,7 +524,7 @@ final class ClassInstrumentationTest extends TestCase
         $map = AttributeScanner::scan([DtoService::class]);
         ClassInstrumentation::register($map);
 
-        (new DtoService())->wrapped(new WrapperDto(new PlainValue('x')));
+        (new DtoService())->handle(new WrapperDto(new PlainValue('x')));
 
         self::assertCount(1, $this->storage);
 
@@ -531,7 +533,7 @@ final class ClassInstrumentationTest extends TestCase
 
         $attributes = $span->getAttributes();
         // no #[TraceProperties] on PlainValue -> falls back to class name
-        self::assertSame(PlainValue::class, $attributes->get('wrapper.inner'));
+        self::assertSame(PlainValue::class, $attributes->get('dto.inner'));
     }
 
     /**
@@ -542,7 +544,7 @@ final class ClassInstrumentationTest extends TestCase
         $map = AttributeScanner::scan([DtoService::class]);
         ClassInstrumentation::register($map);
 
-        (new DtoService())->uninitialized(new UninitializedDto('Bob'));
+        (new DtoService())->handle(new UninitializedDto('Bob'));
 
         self::assertCount(1, $this->storage);
 
@@ -553,5 +555,46 @@ final class ClassInstrumentationTest extends TestCase
         // initialized property is captured, uninitialized one gets the "uninitialized" marker (no crash)
         self::assertSame('Bob', $attributes->get('dto.name'));
         self::assertSame('uninitialized', $attributes->get('dto.ready'));
+    }
+
+    /**
+     * @throws ReflectionException
+     */
+    public function testRegisterDegradesWhenToStringThrows(): void
+    {
+        $map = AttributeScanner::scan([DtoService::class]);
+        ClassInstrumentation::register($map);
+
+        (new DtoService())->handle(new ThrowingStringable());
+
+        self::assertCount(1, $this->storage);
+
+        $span = $this->storage[0];
+        self::assertInstanceOf(ImmutableSpan::class, $span);
+
+        $attributes = $span->getAttributes();
+        // __toString() throws -> degrades to class name, never propagates to the traced method
+        self::assertSame(ThrowingStringable::class, $attributes->get('dto'));
+    }
+
+    /**
+     * @throws ReflectionException
+     */
+    public function testRegisterIncludesOnlyAllowlistedProperties(): void
+    {
+        $map = AttributeScanner::scan([DtoService::class]);
+        ClassInstrumentation::register($map);
+
+        (new DtoService())->handle(new IncludedPropertiesDto(7, 'Ann'));
+
+        self::assertCount(1, $this->storage);
+
+        $span = $this->storage[0];
+        self::assertInstanceOf(ImmutableSpan::class, $span);
+
+        $attributes = $span->getAttributes();
+        self::assertSame(7, $attributes->get('dto.id'));
+        // "name" is not in the include allowlist
+        self::assertFalse($attributes->has('dto.name'));
     }
 }
