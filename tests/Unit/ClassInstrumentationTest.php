@@ -5,11 +5,14 @@ declare(strict_types=1);
 namespace Eerzho\Instrumentation\Class\Tests\Unit;
 
 use ArrayObject;
+use DateTimeImmutable;
+use DateTimeInterface;
 use Eerzho\Instrumentation\Class\AttributeScanner;
 use Eerzho\Instrumentation\Class\ClassInstrumentation;
 use Eerzho\Instrumentation\Class\Tests\Fixtures\AddressDto;
 use Eerzho\Instrumentation\Class\Tests\Fixtures\ArrayArgument;
 use Eerzho\Instrumentation\Class\Tests\Fixtures\BackedEnumArgument;
+use Eerzho\Instrumentation\Class\Tests\Fixtures\DateTimeArgument;
 use Eerzho\Instrumentation\Class\Tests\Fixtures\DtoService;
 use Eerzho\Instrumentation\Class\Tests\Fixtures\ExcludedArguments;
 use Eerzho\Instrumentation\Class\Tests\Fixtures\ExcludedMethods;
@@ -277,6 +280,27 @@ final class ClassInstrumentationTest extends TestCase
         self::assertNotNull($attributes->get('code.file.path'));
         self::assertNotNull($attributes->get('code.line.number'));
         self::assertSame('active', $attributes->get('status'));
+    }
+
+    /**
+     * @throws ReflectionException
+     */
+    public function testRegisterDateTimeArgument(): void
+    {
+        $map = AttributeScanner::scan([DateTimeArgument::class]);
+        ClassInstrumentation::register($map);
+
+        $service = new DateTimeArgument();
+        $at = new DateTimeImmutable('2026-07-16T12:34:56.789+00:00');
+        $service->process($at);
+
+        self::assertCount(1, $this->storage);
+
+        $span = $this->storage[0];
+        self::assertInstanceOf(ImmutableSpan::class, $span);
+
+        $attributes = $span->getAttributes();
+        self::assertSame($at->format(DateTimeInterface::RFC3339_EXTENDED), $attributes->get('at'));
     }
 
     /**

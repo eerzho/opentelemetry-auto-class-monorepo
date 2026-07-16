@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Eerzho\Instrumentation\Class;
 
 use BackedEnum;
+use DateTimeInterface;
 use Eerzho\Instrumentation\Class\Attribute\TraceProperties;
 use JsonException;
 use OpenTelemetry\API\Instrumentation\CachedInstrumentation;
@@ -133,6 +134,10 @@ final class ClassInstrumentation
 
         if ($value instanceof BackedEnum) {
             return [$key => $value->value];
+        }
+
+        if ($value instanceof DateTimeInterface) {
+            return [$key => $value->format(DateTimeInterface::RFC3339_EXTENDED)];
         }
 
         if (is_object($value)) {
