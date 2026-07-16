@@ -4,11 +4,14 @@ on:
   push:
     branches:
       - main
+      - 'release-*'
+      - 'hotfix-*'
     tags:
       - 'v*'
   pull_request:
     branches:
       - main
+      - 'release-*'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
