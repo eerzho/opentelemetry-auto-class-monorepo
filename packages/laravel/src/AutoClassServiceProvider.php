@@ -15,7 +15,7 @@ use ReflectionException;
 
 use function extension_loaded;
 
-final class TraceableServiceProvider extends ServiceProvider
+final class AutoClassServiceProvider extends ServiceProvider
 {
     /**
      * @throws BindingResolutionException
@@ -24,8 +24,8 @@ final class TraceableServiceProvider extends ServiceProvider
     public function boot(): void
     {
         $this->publishes([
-            __DIR__ . '/../config/traceable.php' => $this->app->configPath('traceable.php'),
-        ], 'traceable-config');
+            __DIR__ . '/../config/trace.php' => $this->app->configPath('trace.php'),
+        ], 'trace-config');
 
         if (!extension_loaded('opentelemetry')) {
             return;
@@ -39,7 +39,7 @@ final class TraceableServiceProvider extends ServiceProvider
         $config = $this->app->make('config');
 
         /** @var list<string> $namespaces */
-        $namespaces = $config->get('traceable.namespaces', ['App\\']);
+        $namespaces = $config->get('trace.namespaces', ['App\\']);
 
         $classes = self::getClassesByNamespaces($namespaces);
 

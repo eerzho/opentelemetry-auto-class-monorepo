@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace Eerzho\Instrumentation\Class\Tests\Fixtures;
 
-use Eerzho\Instrumentation\Class\Attribute\Traceable;
+use Eerzho\Instrumentation\Class\Attribute\Trace;
 
-#[Traceable]
-trait TraceableTrait
+#[Trace]
+trait TracedTrait
 {
     public function doSomething(): void
     {

@@ -1,6 +1,6 @@
 {
   "name": "eerzho/opentelemetry-auto-class",
-  "description": "Automatic OpenTelemetry tracing for PHP methods via the #[Traceable] attribute",
+  "description": "Automatic OpenTelemetry tracing for PHP methods via the #[Trace] attribute",
   "type": "library",
   "license": "MIT",
   "keywords": [

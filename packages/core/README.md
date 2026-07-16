@@ -5,7 +5,7 @@
 [![PHP](https://img.shields.io/packagist/dependency-v/eerzho/opentelemetry-auto-class/php)](https://packagist.org/packages/eerzho/opentelemetry-auto-class)
 [![License](https://img.shields.io/packagist/l/eerzho/opentelemetry-auto-class)](https://packagist.org/packages/eerzho/opentelemetry-auto-class)
 
-Automatic OpenTelemetry tracing for PHP methods via the `#[Traceable]` attribute. Framework-agnostic core — mark any class with the attribute, and spans are created automatically using the `ext-opentelemetry` hook API.
+Automatic OpenTelemetry tracing for PHP methods via the `#[Trace]` attribute. Framework-agnostic core — mark any class with the attribute, and spans are created automatically using the `ext-opentelemetry` hook API.
 
 This is a read-only sub-split. Please open issues and pull requests in the [monorepo](https://github.com/eerzho/opentelemetry-auto-class-monorepo).
 
@@ -23,14 +23,14 @@ Requirements:
 
 ### Basic
 
-Add `#[Traceable]` to a class — all public methods will be traced automatically:
+Add `#[Trace]` to a class — all public methods will be traced automatically:
 
 ```php
-use Eerzho\Instrumentation\Class\Attribute\Traceable;
+use Eerzho\Instrumentation\Class\Attribute\Trace;
 use Eerzho\Instrumentation\Class\AttributeScanner;
 use Eerzho\Instrumentation\Class\ClassInstrumentation;
 
-#[Traceable]
+#[Trace]
 class OrderService
 {
     public function create(array $items): void
@@ -57,9 +57,9 @@ ClassInstrumentation::register($map);
 Use the `exclude` parameter to skip specific methods from tracing:
 
 ```php
-use Eerzho\Instrumentation\Class\Attribute\Traceable;
+use Eerzho\Instrumentation\Class\Attribute\Trace;
 
-#[Traceable(exclude: ['healthCheck', 'getVersion'])]
+#[Trace(exclude: ['healthCheck', 'getVersion'])]
 class PaymentService
 {
     public function charge(int $amount, string $currency): void
@@ -83,16 +83,16 @@ class PaymentService
 
 ### Exclude arguments
 
-By default, all method arguments are captured as span attributes. Use `#[Arguments(exclude: [...])]` on a method to hide sensitive parameters:
+By default, all method arguments are captured as span attributes. Use `#[TraceArguments(exclude: [...])]` on a method to hide sensitive parameters:
 
 ```php
-use Eerzho\Instrumentation\Class\Attribute\Arguments;
-use Eerzho\Instrumentation\Class\Attribute\Traceable;
+use Eerzho\Instrumentation\Class\Attribute\TraceArguments;
+use Eerzho\Instrumentation\Class\Attribute\Trace;
 
-#[Traceable]
+#[Trace]
 class AuthService
 {
-    #[Arguments(exclude: ['password', 'token'])]
+    #[TraceArguments(exclude: ['password', 'token'])]
     public function login(string $email, string $password, string $token): void
     {
         // span captures "email" attribute only
@@ -108,7 +108,7 @@ class AuthService
 
 ### Without attributes
 
-You can register classes for tracing without using `#[Traceable]` — build the method map manually and pass it to `ClassInstrumentation::register()`:
+You can register classes for tracing without using `#[Trace]` — build the method map manually and pass it to `ClassInstrumentation::register()`:
 
 ```php
 class OrderService

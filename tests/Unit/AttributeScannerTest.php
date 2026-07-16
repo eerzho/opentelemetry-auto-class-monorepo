@@ -4,20 +4,20 @@ declare(strict_types=1);
 
 namespace Eerzho\Instrumentation\Class\Tests\Unit;
 
-use Eerzho\Instrumentation\Class\Attribute\Arguments;
-use Eerzho\Instrumentation\Class\Attribute\Traceable;
+use Eerzho\Instrumentation\Class\Attribute\Trace;
+use Eerzho\Instrumentation\Class\Attribute\TraceArguments;
 use Eerzho\Instrumentation\Class\AttributeScanner;
-use Eerzho\Instrumentation\Class\Tests\Fixtures\ArgumentsWithoutTraceable;
 use Eerzho\Instrumentation\Class\Tests\Fixtures\ExcludedArguments;
 use Eerzho\Instrumentation\Class\Tests\Fixtures\ExcludedMethods;
 use Eerzho\Instrumentation\Class\Tests\Fixtures\MixedVisibility;
 use Eerzho\Instrumentation\Class\Tests\Fixtures\MultipleArguments;
-use Eerzho\Instrumentation\Class\Tests\Fixtures\TraceableAbstractClass;
-use Eerzho\Instrumentation\Class\Tests\Fixtures\TraceableClass;
-use Eerzho\Instrumentation\Class\Tests\Fixtures\TraceableEnum;
-use Eerzho\Instrumentation\Class\Tests\Fixtures\TraceableInterface;
-use Eerzho\Instrumentation\Class\Tests\Fixtures\TraceableTrait;
-use Eerzho\Instrumentation\Class\Tests\Fixtures\WithoutTraceableClass;
+use Eerzho\Instrumentation\Class\Tests\Fixtures\TraceArgumentsWithoutTrace;
+use Eerzho\Instrumentation\Class\Tests\Fixtures\TracedAbstractClass;
+use Eerzho\Instrumentation\Class\Tests\Fixtures\TracedClass;
+use Eerzho\Instrumentation\Class\Tests\Fixtures\TracedEnum;
+use Eerzho\Instrumentation\Class\Tests\Fixtures\TracedInterface;
+use Eerzho\Instrumentation\Class\Tests\Fixtures\TracedTrait;
+use Eerzho\Instrumentation\Class\Tests\Fixtures\WithoutTraceClass;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use ReflectionException;
@@ -25,8 +25,8 @@ use ReflectionException;
 /**
  * @internal
  */
-#[CoversClass(Traceable::class)]
-#[CoversClass(Arguments::class)]
+#[CoversClass(Trace::class)]
+#[CoversClass(TraceArguments::class)]
 #[CoversClass(AttributeScanner::class)]
 final class AttributeScannerTest extends TestCase
 {
@@ -41,17 +41,17 @@ final class AttributeScannerTest extends TestCase
     /**
      * @throws ReflectionException
      */
-    public function testScanClassWithoutTraceable(): void
+    public function testScanClassWithoutTrace(): void
     {
-        self::assertSame([], AttributeScanner::scan([WithoutTraceableClass::class]));
+        self::assertSame([], AttributeScanner::scan([WithoutTraceClass::class]));
     }
 
     /**
      * @throws ReflectionException
      */
-    public function testScanClassWithArgumentsButWithoutTraceable(): void
+    public function testScanClassWithArgumentsButWithoutTrace(): void
     {
-        self::assertSame([], AttributeScanner::scan([ArgumentsWithoutTraceable::class]));
+        self::assertSame([], AttributeScanner::scan([TraceArgumentsWithoutTrace::class]));
     }
 
     /**
@@ -59,7 +59,7 @@ final class AttributeScannerTest extends TestCase
      */
     public function testScanAbstractClass(): void
     {
-        self::assertSame([], AttributeScanner::scan([TraceableAbstractClass::class]));
+        self::assertSame([], AttributeScanner::scan([TracedAbstractClass::class]));
     }
 
     /**
@@ -67,7 +67,7 @@ final class AttributeScannerTest extends TestCase
      */
     public function testScanInterface(): void
     {
-        self::assertSame([], AttributeScanner::scan([TraceableInterface::class]));
+        self::assertSame([], AttributeScanner::scan([TracedInterface::class]));
     }
 
     /**
@@ -75,7 +75,7 @@ final class AttributeScannerTest extends TestCase
      */
     public function testScanTrait(): void
     {
-        self::assertSame([], AttributeScanner::scan([TraceableTrait::class]));
+        self::assertSame([], AttributeScanner::scan([TracedTrait::class]));
     }
 
     /**
@@ -83,7 +83,7 @@ final class AttributeScannerTest extends TestCase
      */
     public function testScanEnum(): void
     {
-        self::assertSame([], AttributeScanner::scan([TraceableEnum::class]));
+        self::assertSame([], AttributeScanner::scan([TracedEnum::class]));
     }
 
     /**
@@ -91,10 +91,10 @@ final class AttributeScannerTest extends TestCase
      */
     public function testScanPublicMethods(): void
     {
-        $result = AttributeScanner::scan([TraceableClass::class]);
+        $result = AttributeScanner::scan([TracedClass::class]);
 
         self::assertSame([
-            TraceableClass::class => [
+            TracedClass::class => [
                 'greet' => ['name' => 0],
                 'add' => ['a' => 0, 'b' => 1],
             ],

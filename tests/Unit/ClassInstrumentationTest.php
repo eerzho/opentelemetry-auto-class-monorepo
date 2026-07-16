@@ -7,7 +7,6 @@ namespace Eerzho\Instrumentation\Class\Tests\Unit;
 use ArrayObject;
 use Eerzho\Instrumentation\Class\AttributeScanner;
 use Eerzho\Instrumentation\Class\ClassInstrumentation;
-use Eerzho\Instrumentation\Class\Tests\Fixtures\ArgumentsWithoutTraceable;
 use Eerzho\Instrumentation\Class\Tests\Fixtures\ArrayArgument;
 use Eerzho\Instrumentation\Class\Tests\Fixtures\BackedEnumArgument;
 use Eerzho\Instrumentation\Class\Tests\Fixtures\ExcludedArguments;
@@ -20,8 +19,9 @@ use Eerzho\Instrumentation\Class\Tests\Fixtures\ObjectArgument;
 use Eerzho\Instrumentation\Class\Tests\Fixtures\Status;
 use Eerzho\Instrumentation\Class\Tests\Fixtures\Stringable;
 use Eerzho\Instrumentation\Class\Tests\Fixtures\ThrowingMethod;
-use Eerzho\Instrumentation\Class\Tests\Fixtures\TraceableClass;
-use Eerzho\Instrumentation\Class\Tests\Fixtures\WithoutTraceableClass;
+use Eerzho\Instrumentation\Class\Tests\Fixtures\TraceArgumentsWithoutTrace;
+use Eerzho\Instrumentation\Class\Tests\Fixtures\TracedClass;
+use Eerzho\Instrumentation\Class\Tests\Fixtures\WithoutTraceClass;
 use OpenTelemetry\API\Instrumentation\Configurator;
 use OpenTelemetry\API\Trace\SpanKind;
 use OpenTelemetry\API\Trace\StatusCode;
@@ -66,12 +66,12 @@ final class ClassInstrumentationTest extends TestCase
     /**
      * @throws ReflectionException
      */
-    public function testRegisterWithoutTraceableClass(): void
+    public function testRegisterWithoutTraceClass(): void
     {
-        $map = AttributeScanner::scan([WithoutTraceableClass::class]);
+        $map = AttributeScanner::scan([WithoutTraceClass::class]);
         ClassInstrumentation::register($map);
 
-        $service = new WithoutTraceableClass();
+        $service = new WithoutTraceClass();
         $service->doSomething();
 
         self::assertCount(0, $this->storage);
@@ -80,12 +80,12 @@ final class ClassInstrumentationTest extends TestCase
     /**
      * @throws ReflectionException
      */
-    public function testRegisterArgumentsWithoutTraceable(): void
+    public function testRegisterTraceArgumentsWithoutTrace(): void
     {
-        $map = AttributeScanner::scan([ArgumentsWithoutTraceable::class]);
+        $map = AttributeScanner::scan([TraceArgumentsWithoutTrace::class]);
         ClassInstrumentation::register($map);
 
-        $service = new ArgumentsWithoutTraceable();
+        $service = new TraceArgumentsWithoutTrace();
         $service->login('test@test.com', 'secret');
 
         self::assertCount(0, $this->storage);
@@ -94,12 +94,12 @@ final class ClassInstrumentationTest extends TestCase
     /**
      * @throws ReflectionException
      */
-    public function testRegisterTraceableClass(): void
+    public function testRegisterTracedClass(): void
     {
-        $map = AttributeScanner::scan([TraceableClass::class]);
+        $map = AttributeScanner::scan([TracedClass::class]);
         ClassInstrumentation::register($map);
 
-        $service = new TraceableClass();
+        $service = new TracedClass();
         $service->greet('World');
 
         self::assertCount(1, $this->storage);
@@ -108,9 +108,9 @@ final class ClassInstrumentationTest extends TestCase
         self::assertInstanceOf(ImmutableSpan::class, $span);
 
         $attributes = $span->getAttributes();
-        self::assertSame(TraceableClass::class . '::greet', $span->getName());
+        self::assertSame(TracedClass::class . '::greet', $span->getName());
         self::assertSame(SpanKind::KIND_INTERNAL, $span->getKind());
-        self::assertSame(TraceableClass::class . '::greet', $attributes->get('code.function.name'));
+        self::assertSame(TracedClass::class . '::greet', $attributes->get('code.function.name'));
         self::assertNotNull($attributes->get('code.file.path'));
         self::assertNotNull($attributes->get('code.line.number'));
         self::assertSame('World', $attributes->get('name'));
