@@ -40,7 +40,6 @@ use OpenTelemetry\SDK\Trace\ImmutableSpan;
 use OpenTelemetry\SDK\Trace\SpanExporter\InMemoryExporter;
 use OpenTelemetry\SDK\Trace\SpanProcessor\SimpleSpanProcessor;
 use OpenTelemetry\SDK\Trace\TracerProvider;
-use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use ReflectionException;
 use RuntimeException;
@@ -49,7 +48,6 @@ use stdClass;
 /**
  * @internal
  */
-#[CoversClass(ClassInstrumentation::class)]
 final class ClassInstrumentationTest extends TestCase
 {
     /** @var ArrayObject<int, ImmutableSpan> */
