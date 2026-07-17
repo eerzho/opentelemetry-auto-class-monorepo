@@ -1,6 +1,6 @@
 {
   "name": "eerzho/opentelemetry-auto-class-laravel",
-  "description": "Laravel integration for automatic OpenTelemetry tracing via the #[Trace] attribute",
+  "description": "One tag, full visibility — every method call in your Laravel app shows up in your traces, zero config.",
   "type": "library",
   "license": "MIT",
   "keywords": [
@@ -30,7 +30,7 @@
     "php": ">=8.2",
     "ext-opentelemetry": "*",
     "open-telemetry/api": "^1.0",
-    "eerzho/opentelemetry-auto-class": "^0.1",
+    "eerzho/opentelemetry-auto-class": "^0.3",
     "illuminate/support": "^11.0 || ^12.0 || ^13.0"
   },
   "autoload": {

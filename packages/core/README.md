@@ -5,9 +5,11 @@
 [![PHP](https://img.shields.io/packagist/dependency-v/eerzho/opentelemetry-auto-class/php)](https://packagist.org/packages/eerzho/opentelemetry-auto-class)
 [![License](https://img.shields.io/packagist/l/eerzho/opentelemetry-auto-class)](https://packagist.org/packages/eerzho/opentelemetry-auto-class)
 
-Automatic OpenTelemetry tracing for PHP methods via the `#[Trace]` attribute. Framework-agnostic core — mark any class with the attribute, and spans are created automatically using the `ext-opentelemetry` hook API.
+One tag, full visibility — every method call in your PHP app shows up in your traces, no boilerplate, no framework required.
 
 This is a read-only sub-split. Please open issues and pull requests in the [monorepo](https://github.com/eerzho/opentelemetry-auto-class-monorepo).
+
+The framework-agnostic engine — the [Laravel](https://github.com/eerzho/opentelemetry-auto-class-laravel) and [Symfony](https://github.com/eerzho/opentelemetry-auto-class-symfony) integrations build on it to discover and register your classes automatically.
 
 ## Installation
 
@@ -21,82 +23,92 @@ Requirements:
 
 ## Usage
 
-### Basic
-
-Add `#[Trace]` to a class — all public methods will be traced automatically:
+Start with a plain service — we'll add tracing to it one attribute at a time:
 
 ```php
-use Eerzho\Instrumentation\Class\Attribute\Trace;
-use Eerzho\Instrumentation\Class\AttributeScanner;
-use Eerzho\Instrumentation\Class\ClassInstrumentation;
+namespace App\Service;
 
-#[Trace]
 class OrderService
 {
-    public function create(array $items): void
-    {
-        // span "OrderService::create" is created automatically
-    }
-
-    public function cancel(int $orderId): void
-    {
-        // span "OrderService::cancel" is created automatically
-    }
+    public function pay(int $orderId, string $card, Address $address): void {}
+    public function healthCheck(): bool {}
 }
 
-// Register instrumentation
-$map = AttributeScanner::scan([OrderService::class]);
-ClassInstrumentation::register($map);
+class Address
+{
+    public function __construct(public string $city, public string $zip) {}
+}
 ```
 
-> For Laravel and Symfony, use the framework integrations that handle class discovery automatically:
-> [opentelemetry-auto-class-laravel](https://github.com/eerzho/opentelemetry-auto-class-laravel) / [opentelemetry-auto-class-symfony](https://github.com/eerzho/opentelemetry-auto-class-symfony)
-
-### Filtering methods (`include` / `exclude`)
-
-`#[Trace]` traces all public methods by default. Narrow this down with `include` (allowlist) and/or `exclude` (denylist):
+### 1. `#[Trace]` — a span per method
 
 ```php
 use Eerzho\Instrumentation\Class\Attribute\Trace;
 
-// Trace everything except these methods
-#[Trace(exclude: ['healthCheck', 'getVersion'])]
-class PaymentService { /* ... */ }
-
-// Trace only these methods
-#[Trace(include: ['charge', 'refund'])]
-class BillingService { /* ... */ }
+#[Trace(exclude: ['healthCheck'])]   // trace every public method but healthCheck
+// #[Trace(include: ['pay'])]        // or: only pay
+class OrderService
+{
+    public function pay(int $orderId, string $card, Address $address): void {}
+    public function healthCheck(): bool {}
+}
 ```
 
-### Filtering arguments (`include` / `exclude`)
-
-By default, all arguments of a traced method are captured as span attributes. Add `#[TraceArguments]` to a method to filter them — for example to hide sensitive parameters:
+### 2. `#[TraceArguments]` — pick the captured arguments
 
 ```php
 use Eerzho\Instrumentation\Class\Attribute\TraceArguments;
-use Eerzho\Instrumentation\Class\Attribute\Trace;
 
-#[Trace]
-class AuthService
+#[TraceArguments(exclude: ['card'])]       // capture every arg but card
+// #[TraceArguments(include: ['orderId'])] // or: only orderId
+public function pay(int $orderId, string $card, Address $address): void {}
+```
+
+### 3. `#[TraceProperties]` — expand an object argument
+
+```php
+use Eerzho\Instrumentation\Class\Attribute\TraceProperties;
+
+#[TraceProperties(exclude: ['zip'])]     // expand every prop but zip
+// #[TraceProperties(include: ['city'])] // or: only city
+class Address
 {
-    // Capture everything except "password" and "token"
-    #[TraceArguments(exclude: ['password', 'token'])]
-    public function login(string $email, string $password, string $token): void {}
-
-    // Capture only "orderId"
-    #[TraceArguments(include: ['orderId'])]
-    public function pay(int $orderId, string $cardNumber): void {}
-
-    public function logout(int $userId): void
-    {
-        // no #[TraceArguments] → "userId" is captured
-    }
+    public function __construct(public string $city, public string $zip) {}
 }
 ```
 
-### How `include` and `exclude` combine
+### 4. Register
 
-Both `#[Trace]` (methods) and `#[TraceArguments]` (arguments) follow the same rules:
+Once the attributes are in place, scan the classes and register the hooks — once, at bootstrap:
+
+```php
+use Eerzho\Instrumentation\Class\AttributeScanner;
+use Eerzho\Instrumentation\Class\ClassInstrumentation;
+
+ClassInstrumentation::register(AttributeScanner::scan([OrderService::class]));
+```
+
+### Manual registration
+
+Skip `AttributeScanner` and hand `register()` the method map directly:
+
+```php
+ClassInstrumentation::register([
+    OrderService::class => [
+        'pay'    => ['orderId' => 0],  // trace, capture orderId only
+        'cancel' => [],                // trace, capture nothing
+        // methods not listed are not traced
+    ],
+]);
+```
+
+Each entry maps a class → its methods → each method's arguments (`name => position`). Anything not listed is not traced or not captured.
+
+## Traced output
+
+### Selecting what to trace
+
+`include` and `exclude` behave the same wherever they appear — `#[Trace]`, `#[TraceArguments]`, `#[TraceProperties]`:
 
 | `include` | `exclude` | Result                                    |
 |-----------|-----------|-------------------------------------------|
@@ -105,86 +117,37 @@ Both `#[Trace]` (methods) and `#[TraceArguments]` (arguments) follow the same ru
 | `[]`      | `[a]`     | Everything except `a`                     |
 | `[a, b]`  | `[b]`     | Only `a` — **`exclude` wins on conflict** |
 
-An empty `include` means "no allowlist" (trace everything), **not** "trace nothing".
+An empty `include` means "no allowlist" (everything), **not** "nothing".
 
-### Expanding object arguments
+Only **public** methods are traced and only **public** properties are expanded — protected and private are ignored.
 
-By default, an object argument is serialized to a single value (see [Argument serialization](#argument-serialization)). Mark its class with `#[TraceProperties]` to expand its **public** properties into separate span attributes, keyed `argument.property`:
+### Argument serialization
 
-```php
-use Eerzho\Instrumentation\Class\Attribute\Trace;
-use Eerzho\Instrumentation\Class\Attribute\TraceProperties;
+Each captured argument is serialized to a span-compatible value:
 
-#[TraceProperties]
-class Address
-{
-    public function __construct(public string $city, public string $zip) {}
-}
+| Type                                                   | Result                     |
+|--------------------------------------------------------|----------------------------|
+| `string`, `int`, `float`, `bool`                       | As-is                      |
+| `null`                                                 | `"null"`                   |
+| `BackedEnum`                                           | Backing value              |
+| `DateTimeInterface`                                    | RFC3339 with milliseconds  |
+| Object with `#[TraceProperties]`                       | Expanded properties        |
+| Object with `__toString()`                             | String cast                |
+| Object without `#[TraceProperties]` and `__toString()` | Class name (FQCN)          |
+| `array`                                                | JSON string                |
+| Other (`resource`, ...)                                | `gettype()` result         |
 
-#[TraceProperties(exclude: ['passwordHash'])]  // include / exclude work as above
-class User
-{
-    public string $passwordHash = '...';        // excluded
+Object expansion via `#[TraceProperties]`:
 
-    public function __construct(
-        public int $id,
-        public Address $address,                // nested — expanded recursively
-    ) {}
-}
+- Each public property becomes its own attribute, keyed `argument.property` (e.g. `address.city`).
+- **Recursive** and unbounded — a nested property keeps expanding while its class also has `#[TraceProperties]`; otherwise it falls back to the rules above.
+- An uninitialized typed property is recorded as `"uninitialized"`.
+- Circular references are broken — a repeated object degrades to its class name.
+- Any reflection or `__toString()` failure falls back to the class name, so serialization never breaks the traced call. (A failed array encode falls back to `"array"`.)
 
-#[Trace]
-class UserService
-{
-    public function save(User $user): void {}
-}
-```
+### Span structure
 
-The `save` span gets: `user.id`, `user.address.city`, `user.address.zip`.
-
-- Expansion is **recursive** and unbounded: nested properties are expanded as long as their class also has `#[TraceProperties]`; otherwise each falls back to the normal serialization (`__toString()` → class name).
-- Only **public** properties are expanded; an uninitialized typed property is recorded as `"uninitialized"`.
-- Circular references are broken automatically — a repeated object degrades to its class name.
-- Expansion never breaks the traced method: any reflection or `__toString()` failure falls back to the class name.
-
-### Without attributes
-
-You can register classes for tracing without using `#[Trace]` — build the method map manually and pass it to `ClassInstrumentation::register()`:
-
-```php
-class OrderService
-{
-    public function create(array $items, int $priority, string $note): void {}
-
-    public function cancel(int $orderId): void {}
-
-    public function archive(int $orderId): void {}
-}
-```
-
-```php
-use Eerzho\Instrumentation\Class\ClassInstrumentation;
-
-ClassInstrumentation::register([
-    OrderService::class => [
-        // trace with arguments, skip 'priority' (position 1)
-        'create' => ['items' => 0, 'note' => 2],
-        // trace without capturing arguments
-        'cancel' => [],
-        // 'archive' is not listed — it will NOT be traced
-    ],
-]);
-```
-
-Each entry maps a class to its methods, and each method to its arguments (`parameter name => position`). Methods not listed are not traced. Arguments not listed are not captured.
-
-## How it works
-
-Each traced method call produces a span:
-
-- Name: `ClassName::methodName`
-- Kind: `INTERNAL`
-
-With attributes:
+Each traced call produces an `INTERNAL` span named `ClassName::methodName`, with:
 
 | Attribute            | Value                             |
 |----------------------|-----------------------------------|
@@ -193,7 +156,7 @@ With attributes:
 | `code.line.number`   | Line number of the method         |
 | Method arguments     | Parameter name → serialized value |
 
-If a method throws an exception, the span records an `exception` event and sets status to `ERROR`:
+If the method throws, the span records an `exception` event and its status is set to `ERROR`:
 
 | Event attribute        | Value                |
 |------------------------|----------------------|
@@ -201,37 +164,21 @@ If a method throws an exception, the span records an `exception` event and sets 
 | `exception.message`    | Exception message    |
 | `exception.stacktrace` | Full stack trace     |
 
-## Argument serialization
+## How it works
 
-Arguments are serialized to span-compatible types:
+`AttributeScanner::scan()` reflects over the classes you pass it:
 
-| Type                                                   | Result              | Example                                                       |
-|--------------------------------------------------------|---------------------|---------------------------------------------------------------|
-| `string`, `int`, `float`, `bool`                       | As-is               | `"hello"`, `42`, `3.14`, `true`                               |
-| `null`                                                 | `"null"`            | `null` → `"null"`                                             |
-| `BackedEnum`                                           | Backing value       | `Status::Active` → `"active"`                                 |
-| Object with `#[TraceProperties]`                       | Expanded properties | see [Expanding object arguments](#expanding-object-arguments) |
-| Object with `__toString()`                             | String cast         | `$money` → `"100 USD"`                                        |
-| Object without `#[TraceProperties]` and `__toString()` | Class name (FQCN)   | `$dto` → `"App\DTO\Order"`                                    |
-| `array`                                                | JSON string         | `[1, 2]` → `"[1,2]"`                                          |
-| Other (`resource`, ...)                                | `gettype()` result  | `"resource"`                                                  |
+1. Skips abstract classes, interfaces, traits, and enums.
+2. Reads `#[Trace]` on the class — no attribute, no instrumentation.
+3. Collects the public methods allowed by `include` / `exclude`, and for each the arguments allowed by `#[TraceArguments]`.
 
-If JSON encoding of an array fails, the value is serialized as `"array"`.
+It returns a `class → method → {argument: position}` map. `ClassInstrumentation::register()` then installs an `ext-opentelemetry` hook on every mapped method:
+
+- **pre** — opens the span and attaches the `code.*` attributes and serialized arguments.
+- **post** — records the exception and sets `ERROR` status if the method threw, then ends the span.
 
 ## Disabling instrumentation
-
-To disable tracing at runtime, use the standard OpenTelemetry environment variable:
 
 ```bash
 OTEL_PHP_DISABLED_INSTRUMENTATIONS=class
 ```
-
-## Limitations
-
-- Only **public** methods are traced (protected and private are ignored)
-- Abstract classes, interfaces, traits, and enums are skipped
-- Requires `ext-opentelemetry` installed and loaded
-
-## License
-
-[MIT](LICENSE)
