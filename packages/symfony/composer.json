@@ -1,6 +1,6 @@
 {
   "name": "eerzho/opentelemetry-auto-class-symfony",
-  "description": "Symfony integration for automatic OpenTelemetry tracing via the #[Trace] attribute",
+  "description": "One tag, full visibility — every method call in your Symfony app shows up in your traces, zero config.",
   "type": "symfony-bundle",
   "license": "MIT",
   "keywords": [
@@ -30,7 +30,7 @@
     "php": ">=8.2",
     "ext-opentelemetry": "*",
     "open-telemetry/api": "^1.0",
-    "eerzho/opentelemetry-auto-class": "^0.1",
+    "eerzho/opentelemetry-auto-class": "^0.3",
     "symfony/http-kernel": "^6.0 || ^7.0 || ^8.0",
     "symfony/dependency-injection": "^6.0 || ^7.0 || ^8.0"
   },

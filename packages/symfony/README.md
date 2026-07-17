@@ -5,7 +5,9 @@
 [![PHP](https://img.shields.io/packagist/dependency-v/eerzho/opentelemetry-auto-class-symfony/php)](https://packagist.org/packages/eerzho/opentelemetry-auto-class-symfony)
 [![License](https://img.shields.io/packagist/l/eerzho/opentelemetry-auto-class-symfony)](https://packagist.org/packages/eerzho/opentelemetry-auto-class-symfony)
 
-Symfony integration for [opentelemetry-auto-class](https://github.com/eerzho/opentelemetry-auto-class). Scans your service container for `#[Trace]` classes at compile time and instruments them — no manual registration.
+One tag, full visibility — every method call in your Symfony app shows up in your traces, zero config.
+
+The Symfony integration for [opentelemetry-auto-class](https://github.com/eerzho/opentelemetry-auto-class) — your classes are discovered and registered automatically.
 
 This is a read-only sub-split. Please open issues and pull requests in the [monorepo](https://github.com/eerzho/opentelemetry-auto-class-monorepo).
 
@@ -30,10 +32,6 @@ Requirements:
 - PHP 8.2+
 - Symfony 6+
 
-## Configuration
-
-None. The bundle instruments any service in the container carrying `#[Trace]` — there is nothing to configure.
-
 ## Usage
 
 Add `#[Trace]` to any class registered as a service:
@@ -42,22 +40,31 @@ Add `#[Trace]` to any class registered as a service:
 namespace App\Service;
 
 use Eerzho\Instrumentation\Class\Attribute\Trace;
+use Eerzho\Instrumentation\Class\Attribute\TraceArguments;
+use Eerzho\Instrumentation\Class\Attribute\TraceProperties;
 
-#[Trace]
+#[Trace(exclude: ['healthCheck'])]         // trace public methods, but hide "healthCheck"
 class OrderService
 {
-    public function create(array $items): void
-    {
-        // span "App\Service\OrderService::create" is created automatically
-    }
+    // span "App\Service\OrderService::pay"
+    #[TraceArguments(exclude: ['card'])]   // hide "card" from the span
+    public function pay(int $orderId, string $card, Address $address): void {}
+
+    public function healthCheck(): bool {}
+}
+
+#[TraceProperties(exclude: ['zip'])]       // expand public props, but hide "zip"
+class Address
+{
+    public function __construct(public string $city, public string $zip) {}
 }
 ```
 
-Attribute options (`include`/`exclude`, argument capture, serialization, exception handling) are documented in the [core README](https://github.com/eerzho/opentelemetry-auto-class).
+All three attributes and their options are fully documented in the [core](https://github.com/eerzho/opentelemetry-auto-class).
 
 ## How it works
 
-1. During container compilation, the bundle scans all service definitions for the `#[Trace]` attribute
+1. During container compilation, scans all service definitions for the `#[Trace]` attribute
 2. Builds a method map and stores it as a container parameter
 3. On kernel boot, registers `ext-opentelemetry` hooks for matched methods
 
@@ -68,7 +75,3 @@ Attribute options (`include`/`exclude`, argument capture, serialization, excepti
 ```bash
 OTEL_PHP_DISABLED_INSTRUMENTATIONS=class
 ```
-
-## License
-
-[MIT](LICENSE)

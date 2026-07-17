@@ -1,8 +1,27 @@
 {
   "name": "eerzho/opentelemetry-auto-class-monorepo",
-  "description": "Monorepo for automatic OpenTelemetry tracing via the #[Trace] attribute",
+  "description": "Development monorepo for the opentelemetry-auto-class packages — the framework-agnostic core plus its Laravel and Symfony integrations, each published as a standalone package.",
   "type": "project",
   "license": "MIT",
+  "keywords": [
+    "opentelemetry",
+    "otel",
+    "telemetry",
+    "tracing",
+    "traces",
+    "distributed-tracing",
+    "instrumentation",
+    "auto-instrumentation",
+    "observability",
+    "apm",
+    "monitoring",
+    "php-attributes",
+    "spans",
+    "laravel",
+    "laravel-package",
+    "symfony",
+    "symfony-bundle"
+  ],
   "authors": [
     {
       "name": "Zhanbolat Yerkinbay",

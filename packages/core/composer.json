@@ -1,6 +1,6 @@
 {
   "name": "eerzho/opentelemetry-auto-class",
-  "description": "Automatic OpenTelemetry tracing for PHP methods via the #[Trace] attribute",
+  "description": "One tag, full visibility — every method call in your PHP app shows up in your traces, no boilerplate, no framework required.",
   "type": "library",
   "license": "MIT",
   "keywords": [

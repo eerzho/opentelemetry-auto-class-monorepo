@@ -5,7 +5,9 @@
 [![PHP](https://img.shields.io/packagist/dependency-v/eerzho/opentelemetry-auto-class-laravel/php)](https://packagist.org/packages/eerzho/opentelemetry-auto-class-laravel)
 [![License](https://img.shields.io/packagist/l/eerzho/opentelemetry-auto-class-laravel)](https://packagist.org/packages/eerzho/opentelemetry-auto-class-laravel)
 
-Laravel integration for [opentelemetry-auto-class](https://github.com/eerzho/opentelemetry-auto-class). Discovers `#[Trace]` classes in your configured namespaces and instruments them on boot — no manual registration.
+One tag, full visibility — every method call in your Laravel app shows up in your traces, zero config.
+
+The Laravel integration for [opentelemetry-auto-class](https://github.com/eerzho/opentelemetry-auto-class) — your classes are discovered and registered automatically.
 
 This is a read-only sub-split. Please open issues and pull requests in the [monorepo](https://github.com/eerzho/opentelemetry-auto-class-monorepo).
 
@@ -19,8 +21,6 @@ Requirements:
 - [ext-opentelemetry](https://opentelemetry.io/docs/zero-code/php/)
 - PHP 8.2+
 - Laravel 10+
-
-The service provider is auto-discovered — no manual registration needed.
 
 ## Configuration
 
@@ -49,18 +49,27 @@ Add `#[Trace]` to any class in a scanned namespace:
 namespace App\Services;
 
 use Eerzho\Instrumentation\Class\Attribute\Trace;
+use Eerzho\Instrumentation\Class\Attribute\TraceArguments;
+use Eerzho\Instrumentation\Class\Attribute\TraceProperties;
 
-#[Trace]
+#[Trace(exclude: ['healthCheck'])]         // trace public methods, but hide "healthCheck"
 class OrderService
 {
-    public function create(array $items): void
-    {
-        // span "App\Services\OrderService::create" is created automatically
-    }
+    // span "App\Services\OrderService::pay"
+    #[TraceArguments(exclude: ['card'])]   // hide "card" from the span
+    public function pay(int $orderId, string $card, Address $address): void {}
+
+    public function healthCheck(): bool {}
+}
+
+#[TraceProperties(exclude: ['zip'])]       // expand public props, but hide "zip"
+class Address
+{
+    public function __construct(public string $city, public string $zip) {}
 }
 ```
 
-Attribute options (`include`/`exclude`, argument capture, serialization, exception handling) are documented in the [core README](https://github.com/eerzho/opentelemetry-auto-class).
+All three attributes and their options are fully documented in the [core](https://github.com/eerzho/opentelemetry-auto-class).
 
 ## How it works
 
@@ -78,7 +87,3 @@ On boot the service provider:
 ```bash
 OTEL_PHP_DISABLED_INSTRUMENTATIONS=class
 ```
-
-## License
-
-[MIT](LICENSE)
