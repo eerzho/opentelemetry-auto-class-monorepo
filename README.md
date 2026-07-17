@@ -41,8 +41,3 @@ Default PHP version is 8.2. Override with `PHP_VERSION` for any command:
 ```bash
 make test PHP_VERSION=8.3
 ```
-
-## License
-
-[MIT](LICENSE)
-
