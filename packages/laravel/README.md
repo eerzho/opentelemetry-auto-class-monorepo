@@ -5,7 +5,9 @@
 [![PHP](https://img.shields.io/packagist/dependency-v/eerzho/opentelemetry-auto-class-laravel/php)](https://packagist.org/packages/eerzho/opentelemetry-auto-class-laravel)
 [![License](https://img.shields.io/packagist/l/eerzho/opentelemetry-auto-class-laravel)](https://packagist.org/packages/eerzho/opentelemetry-auto-class-laravel)
 
-Laravel integration for [opentelemetry-auto-class](https://github.com/eerzho/opentelemetry-auto-class). Discovers `#[Trace]` classes in your configured namespaces and instruments them on boot — no manual registration.
+One tag, full visibility — every method call in your Laravel app shows up in your traces, zero config.
+
+The Laravel integration for [opentelemetry-auto-class](https://github.com/eerzho/opentelemetry-auto-class) — your classes are discovered and registered automatically.
 
 This is a read-only sub-split. Please open issues and pull requests in the [monorepo](https://github.com/eerzho/opentelemetry-auto-class-monorepo).
 

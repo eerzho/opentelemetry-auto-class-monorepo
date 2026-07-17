@@ -5,7 +5,9 @@
 [![PHP](https://img.shields.io/packagist/dependency-v/eerzho/opentelemetry-auto-class-symfony/php)](https://packagist.org/packages/eerzho/opentelemetry-auto-class-symfony)
 [![License](https://img.shields.io/packagist/l/eerzho/opentelemetry-auto-class-symfony)](https://packagist.org/packages/eerzho/opentelemetry-auto-class-symfony)
 
-Symfony integration for [opentelemetry-auto-class](https://github.com/eerzho/opentelemetry-auto-class). Scans your service container for `#[Trace]` classes at compile time and instruments them — no manual registration.
+One tag, full visibility — every method call in your Symfony app shows up in your traces, zero config.
+
+The Symfony integration for [opentelemetry-auto-class](https://github.com/eerzho/opentelemetry-auto-class) — your classes are discovered and registered automatically.
 
 This is a read-only sub-split. Please open issues and pull requests in the [monorepo](https://github.com/eerzho/opentelemetry-auto-class-monorepo).
 

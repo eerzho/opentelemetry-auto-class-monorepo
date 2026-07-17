@@ -5,7 +5,7 @@
 [![PHP Version](https://img.shields.io/badge/php-≥8.2-blue)](https://github.com/eerzho/opentelemetry-auto-class-monorepo)
 [![License](https://img.shields.io/badge/license-MIT-green)](https://github.com/eerzho/opentelemetry-auto-class-monorepo)
 
-Monorepo for automatic OpenTelemetry tracing of PHP methods via the `#[Trace]` attribute. Mark any class with the attribute — spans are created automatically using the `ext-opentelemetry` hook API, no manual instrumentation needed.
+Development monorepo for the opentelemetry-auto-class packages — the framework-agnostic core plus its Laravel and Symfony integrations, each published as a standalone package.
 
 ## Packages
 

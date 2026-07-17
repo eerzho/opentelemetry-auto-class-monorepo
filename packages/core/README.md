@@ -5,11 +5,11 @@
 [![PHP](https://img.shields.io/packagist/dependency-v/eerzho/opentelemetry-auto-class/php)](https://packagist.org/packages/eerzho/opentelemetry-auto-class)
 [![License](https://img.shields.io/packagist/l/eerzho/opentelemetry-auto-class)](https://packagist.org/packages/eerzho/opentelemetry-auto-class)
 
-Automatic OpenTelemetry tracing for PHP methods via the `#[Trace]` attribute. Framework-agnostic core — mark a class, and spans are created through the `ext-opentelemetry` hook API.
+One tag, full visibility — every method call in your PHP app shows up in your traces, no boilerplate, no framework required.
 
 This is a read-only sub-split. Please open issues and pull requests in the [monorepo](https://github.com/eerzho/opentelemetry-auto-class-monorepo).
 
-The [Laravel](https://github.com/eerzho/opentelemetry-auto-class-laravel) and [Symfony](https://github.com/eerzho/opentelemetry-auto-class-symfony) integrations build on this core to discover and register your classes automatically.
+The framework-agnostic engine — the [Laravel](https://github.com/eerzho/opentelemetry-auto-class-laravel) and [Symfony](https://github.com/eerzho/opentelemetry-auto-class-symfony) integrations build on it to discover and register your classes automatically.
 
 ## Installation
 
