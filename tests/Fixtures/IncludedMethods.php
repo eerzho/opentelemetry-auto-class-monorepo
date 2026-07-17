@@ -6,14 +6,18 @@ namespace Eerzho\Instrumentation\Class\Tests\Fixtures;
 
 use Eerzho\Instrumentation\Class\Attribute\Trace;
 
-#[Trace(exclude: ['secret'])]
-final class ExcludedMethods
+#[Trace(include: ['visible', 'also'], exclude: ['also'])]
+final class IncludedMethods
 {
     public function visible(): void
     {
     }
 
-    public function secret(): void
+    public function also(): void
+    {
+    }
+
+    public function hidden(): void
     {
     }
 }

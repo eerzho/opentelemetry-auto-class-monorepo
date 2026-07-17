@@ -5,7 +5,7 @@
 [![PHP](https://img.shields.io/packagist/dependency-v/eerzho/opentelemetry-auto-class/php)](https://packagist.org/packages/eerzho/opentelemetry-auto-class)
 [![License](https://img.shields.io/packagist/l/eerzho/opentelemetry-auto-class)](https://packagist.org/packages/eerzho/opentelemetry-auto-class)
 
-Automatic OpenTelemetry tracing for PHP methods via the `#[Traceable]` attribute. Framework-agnostic core — mark any class with the attribute, and spans are created automatically using the `ext-opentelemetry` hook API.
+Automatic OpenTelemetry tracing for PHP methods via the `#[Trace]` attribute. Framework-agnostic core — mark any class with the attribute, and spans are created automatically using the `ext-opentelemetry` hook API.
 
 This is a read-only sub-split. Please open issues and pull requests in the [monorepo](https://github.com/eerzho/opentelemetry-auto-class-monorepo).
 
@@ -23,14 +23,14 @@ Requirements:
 
 ### Basic
 
-Add `#[Traceable]` to a class — all public methods will be traced automatically:
+Add `#[Trace]` to a class — all public methods will be traced automatically:
 
 ```php
-use Eerzho\Instrumentation\Class\Attribute\Traceable;
+use Eerzho\Instrumentation\Class\Attribute\Trace;
 use Eerzho\Instrumentation\Class\AttributeScanner;
 use Eerzho\Instrumentation\Class\ClassInstrumentation;
 
-#[Traceable]
+#[Trace]
 class OrderService
 {
     public function create(array $items): void
@@ -52,63 +52,103 @@ ClassInstrumentation::register($map);
 > For Laravel and Symfony, use the framework integrations that handle class discovery automatically:
 > [opentelemetry-auto-class-laravel](https://github.com/eerzho/opentelemetry-auto-class-laravel) / [opentelemetry-auto-class-symfony](https://github.com/eerzho/opentelemetry-auto-class-symfony)
 
-### Exclude methods
+### Filtering methods (`include` / `exclude`)
 
-Use the `exclude` parameter to skip specific methods from tracing:
+`#[Trace]` traces all public methods by default. Narrow this down with `include` (allowlist) and/or `exclude` (denylist):
 
 ```php
-use Eerzho\Instrumentation\Class\Attribute\Traceable;
+use Eerzho\Instrumentation\Class\Attribute\Trace;
 
-#[Traceable(exclude: ['healthCheck', 'getVersion'])]
-class PaymentService
-{
-    public function charge(int $amount, string $currency): void
-    {
-        // traced
-    }
+// Trace everything except these methods
+#[Trace(exclude: ['healthCheck', 'getVersion'])]
+class PaymentService { /* ... */ }
 
-    public function healthCheck(): bool
-    {
-        // NOT traced
-        return true;
-    }
-
-    public function getVersion(): string
-    {
-        // NOT traced
-        return '1.0.0';
-    }
-}
+// Trace only these methods
+#[Trace(include: ['charge', 'refund'])]
+class BillingService { /* ... */ }
 ```
 
-### Exclude arguments
+### Filtering arguments (`include` / `exclude`)
 
-By default, all method arguments are captured as span attributes. Use `#[Arguments(exclude: [...])]` on a method to hide sensitive parameters:
+By default, all arguments of a traced method are captured as span attributes. Add `#[TraceArguments]` to a method to filter them — for example to hide sensitive parameters:
 
 ```php
-use Eerzho\Instrumentation\Class\Attribute\Arguments;
-use Eerzho\Instrumentation\Class\Attribute\Traceable;
+use Eerzho\Instrumentation\Class\Attribute\TraceArguments;
+use Eerzho\Instrumentation\Class\Attribute\Trace;
 
-#[Traceable]
+#[Trace]
 class AuthService
 {
-    #[Arguments(exclude: ['password', 'token'])]
-    public function login(string $email, string $password, string $token): void
-    {
-        // span captures "email" attribute only
-        // "password" and "token" are excluded
-    }
+    // Capture everything except "password" and "token"
+    #[TraceArguments(exclude: ['password', 'token'])]
+    public function login(string $email, string $password, string $token): void {}
+
+    // Capture only "orderId"
+    #[TraceArguments(include: ['orderId'])]
+    public function pay(int $orderId, string $cardNumber): void {}
 
     public function logout(int $userId): void
     {
-        // span captures "userId" attribute (no exclusions)
+        // no #[TraceArguments] → "userId" is captured
     }
 }
 ```
 
+### How `include` and `exclude` combine
+
+Both `#[Trace]` (methods) and `#[TraceArguments]` (arguments) follow the same rules:
+
+| `include` | `exclude` | Result                                    |
+|-----------|-----------|-------------------------------------------|
+| `[]`      | `[]`      | Everything (default)                      |
+| `[a, b]`  | `[]`      | Only `a` and `b`                          |
+| `[]`      | `[a]`     | Everything except `a`                     |
+| `[a, b]`  | `[b]`     | Only `a` — **`exclude` wins on conflict** |
+
+An empty `include` means "no allowlist" (trace everything), **not** "trace nothing".
+
+### Expanding object arguments
+
+By default, an object argument is serialized to a single value (see [Argument serialization](#argument-serialization)). Mark its class with `#[TraceProperties]` to expand its **public** properties into separate span attributes, keyed `argument.property`:
+
+```php
+use Eerzho\Instrumentation\Class\Attribute\Trace;
+use Eerzho\Instrumentation\Class\Attribute\TraceProperties;
+
+#[TraceProperties]
+class Address
+{
+    public function __construct(public string $city, public string $zip) {}
+}
+
+#[TraceProperties(exclude: ['passwordHash'])]  // include / exclude work as above
+class User
+{
+    public string $passwordHash = '...';        // excluded
+
+    public function __construct(
+        public int $id,
+        public Address $address,                // nested — expanded recursively
+    ) {}
+}
+
+#[Trace]
+class UserService
+{
+    public function save(User $user): void {}
+}
+```
+
+The `save` span gets: `user.id`, `user.address.city`, `user.address.zip`.
+
+- Expansion is **recursive** and unbounded: nested properties are expanded as long as their class also has `#[TraceProperties]`; otherwise each falls back to the normal serialization (`__toString()` → class name).
+- Only **public** properties are expanded; an uninitialized typed property is recorded as `"uninitialized"`.
+- Circular references are broken automatically — a repeated object degrades to its class name.
+- Expansion never breaks the traced method: any reflection or `__toString()` failure falls back to the class name.
+
 ### Without attributes
 
-You can register classes for tracing without using `#[Traceable]` — build the method map manually and pass it to `ClassInstrumentation::register()`:
+You can register classes for tracing without using `#[Trace]` — build the method map manually and pass it to `ClassInstrumentation::register()`:
 
 ```php
 class OrderService
@@ -165,15 +205,16 @@ If a method throws an exception, the span records an `exception` event and sets 
 
 Arguments are serialized to span-compatible types:
 
-| Type                             | Result             | Example                         |
-|----------------------------------|--------------------|---------------------------------|
-| `string`, `int`, `float`, `bool` | As-is              | `"hello"`, `42`, `3.14`, `true` |
-| `null`                           | `"null"`           | `null` → `"null"`               |
-| `BackedEnum`                     | Backing value      | `Status::Active` → `"active"`   |
-| Object with `__toString()`       | String cast        | `$money` → `"100 USD"`          |
-| Object without `__toString()`    | Class name (FQCN)  | `$dto` → `"App\DTO\Order"`      |
-| `array`                          | JSON string        | `[1, 2]` → `"[1,2]"`            |
-| Other (`resource`, ...)          | `gettype()` result | `"resource"`                    |
+| Type                                                   | Result              | Example                                                       |
+|--------------------------------------------------------|---------------------|---------------------------------------------------------------|
+| `string`, `int`, `float`, `bool`                       | As-is               | `"hello"`, `42`, `3.14`, `true`                               |
+| `null`                                                 | `"null"`            | `null` → `"null"`                                             |
+| `BackedEnum`                                           | Backing value       | `Status::Active` → `"active"`                                 |
+| Object with `#[TraceProperties]`                       | Expanded properties | see [Expanding object arguments](#expanding-object-arguments) |
+| Object with `__toString()`                             | String cast         | `$money` → `"100 USD"`                                        |
+| Object without `#[TraceProperties]` and `__toString()` | Class name (FQCN)   | `$dto` → `"App\DTO\Order"`                                    |
+| `array`                                                | JSON string         | `[1, 2]` → `"[1,2]"`                                          |
+| Other (`resource`, ...)                                | `gettype()` result  | `"resource"`                                                  |
 
 If JSON encoding of an array fails, the value is serialized as `"array"`.
 

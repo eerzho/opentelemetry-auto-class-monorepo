@@ -4,14 +4,14 @@ declare(strict_types=1);
 
 namespace Eerzho\Instrumentation\Class;
 
-use Eerzho\Instrumentation\Class\Attribute\Arguments;
-use Eerzho\Instrumentation\Class\Attribute\Traceable;
+use Eerzho\Instrumentation\Class\Attribute\Trace;
+use Eerzho\Instrumentation\Class\Attribute\TraceArguments;
 use ReflectionClass;
 use ReflectionException;
 use ReflectionMethod;
 
-use function array_key_exists;
 use function assert;
+use function in_array;
 
 final class AttributeScanner
 {
@@ -65,15 +65,14 @@ final class AttributeScanner
      */
     private static function scanMethods(ReflectionClass $class): array
     {
-        $attribute = self::findTraceable($class);
+        $attribute = self::findTrace($class);
         if ($attribute === null) {
             return [];
         }
-        $excludeMap = array_flip($attribute->exclude);
 
         $methodsMap = [];
         foreach ($class->getMethods(ReflectionMethod::IS_PUBLIC) as $method) {
-            if (!array_key_exists($method->getName(), $excludeMap)) {
+            if (self::isAllowed($method->getName(), $attribute->include, $attribute->exclude)) {
                 $methodsMap[$method->getName()] = self::scanArguments($method);
             }
         }
@@ -86,21 +85,13 @@ final class AttributeScanner
      */
     private static function scanArguments(ReflectionMethod $method): array
     {
-        $attribute = self::findArguments($method);
-        if ($attribute === null) {
-            $arguments = [];
-            foreach ($method->getParameters() as $parameter) {
-                $arguments[$parameter->getName()] = $parameter->getPosition();
-            }
-
-            return $arguments;
-        }
-        $excludeMap = array_flip($attribute->exclude);
+        $attribute = self::findTraceArguments($method);
 
         $arguments = [];
         foreach ($method->getParameters() as $parameter) {
-            if (!array_key_exists($parameter->getName(), $excludeMap)) {
-                $arguments[$parameter->getName()] = $parameter->getPosition();
+            $name = $parameter->getName();
+            if ($attribute === null || self::isAllowed($name, $attribute->include, $attribute->exclude)) {
+                $arguments[$name] = $parameter->getPosition();
             }
         }
 
@@ -108,24 +99,37 @@ final class AttributeScanner
     }
 
     /**
+     * @param list<string> $include
+     * @param list<string> $exclude
+     */
+    private static function isAllowed(string $name, array $include, array $exclude): bool
+    {
+        if ($include !== [] && !in_array($name, $include, true)) {
+            return false;
+        }
+
+        return !in_array($name, $exclude, true);
+    }
+
+    /**
      * @param ReflectionClass<object> $class
      */
-    private static function findTraceable(ReflectionClass $class): ?Traceable
+    private static function findTrace(ReflectionClass $class): ?Trace
     {
-        $attributes = $class->getAttributes(Traceable::class);
+        $attributes = $class->getAttributes(Trace::class);
         $instance = $attributes !== [] ? $attributes[0]->newInstance() : null;
 
-        assert($instance instanceof Traceable || $instance === null);
+        assert($instance instanceof Trace || $instance === null);
 
         return $instance;
     }
 
-    private static function findArguments(ReflectionMethod $method): ?Arguments
+    private static function findTraceArguments(ReflectionMethod $method): ?TraceArguments
     {
-        $attributes = $method->getAttributes(Arguments::class);
+        $attributes = $method->getAttributes(TraceArguments::class);
         $instance = $attributes !== [] ? $attributes[0]->newInstance() : null;
 
-        assert($instance instanceof Arguments || $instance === null);
+        assert($instance instanceof TraceArguments || $instance === null);
 
         return $instance;
     }

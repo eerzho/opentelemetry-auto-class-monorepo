@@ -8,9 +8,9 @@ use Eerzho\Instrumentation\Class\Attribute\Trace;
 use Eerzho\Instrumentation\Class\Attribute\TraceArguments;
 
 #[Trace]
-final class ExcludedArguments
+final class IncludedArguments
 {
-    #[TraceArguments(exclude: ['second'])]
+    #[TraceArguments(include: ['first', 'third'])]
     public function process(string $first, string $second, string $third): void
     {
     }

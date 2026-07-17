@@ -7,9 +7,9 @@ namespace Eerzho\Instrumentation\Class\Tests\Fixtures;
 use Eerzho\Instrumentation\Class\Attribute\Trace;
 
 #[Trace]
-final class ArrayArgument
+final class DtoService
 {
-    public function process(array $items): void
+    public function handle(object $dto): void
     {
     }
 }

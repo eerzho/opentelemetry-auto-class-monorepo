@@ -16,7 +16,7 @@ use Symfony\Component\HttpKernel\Bundle\Bundle;
 use function class_exists;
 use function extension_loaded;
 
-final class TraceableBundle extends Bundle implements CompilerPassInterface
+final class AutoClassBundle extends Bundle implements CompilerPassInterface
 {
     public function build(ContainerBuilder $container): void
     {
@@ -44,7 +44,7 @@ final class TraceableBundle extends Bundle implements CompilerPassInterface
             }
         }
         $classesMap = AttributeScanner::scan($classes);
-        $container->setParameter('otel.traceable.classes_map', $classesMap);
+        $container->setParameter('otel.trace.classes_map', $classesMap);
     }
 
     public function boot(): void
@@ -62,7 +62,7 @@ final class TraceableBundle extends Bundle implements CompilerPassInterface
         }
 
         /** @var array<class-string, array<string, array<string, int>>> $classesMap */
-        $classesMap = $this->container->getParameter('otel.traceable.classes_map');
+        $classesMap = $this->container->getParameter('otel.trace.classes_map');
         ClassInstrumentation::register($classesMap);
     }
 }

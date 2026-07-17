@@ -1,6 +1,6 @@
 {
   "name": "eerzho/opentelemetry-auto-class-laravel",
-  "description": "Laravel integration for automatic OpenTelemetry tracing via the #[Traceable] attribute",
+  "description": "Laravel integration for automatic OpenTelemetry tracing via the #[Trace] attribute",
   "type": "library",
   "license": "MIT",
   "keywords": [
@@ -41,7 +41,7 @@
   "extra": {
     "laravel": {
       "providers": [
-        "Eerzho\\Instrumentation\\Class\\Laravel\\TraceableServiceProvider"
+        "Eerzho\\Instrumentation\\Class\\Laravel\\AutoClassServiceProvider"
       ]
     }
   },

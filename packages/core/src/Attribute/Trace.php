@@ -7,12 +7,14 @@ namespace Eerzho\Instrumentation\Class\Attribute;
 use Attribute;
 
 #[Attribute(Attribute::TARGET_CLASS)]
-final readonly class Traceable
+final readonly class Trace
 {
     /**
+     * @param list<string> $include
      * @param list<string> $exclude
      */
     public function __construct(
+        public array $include = [],
         public array $exclude = [],
     ) {
     }
