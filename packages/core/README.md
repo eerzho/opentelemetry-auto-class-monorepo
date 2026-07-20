@@ -5,7 +5,7 @@
 [![PHP](https://img.shields.io/packagist/dependency-v/eerzho/opentelemetry-auto-class/php)](https://packagist.org/packages/eerzho/opentelemetry-auto-class)
 [![License](https://img.shields.io/packagist/l/eerzho/opentelemetry-auto-class)](https://packagist.org/packages/eerzho/opentelemetry-auto-class)
 
-One tag, full visibility — every method call in your PHP app shows up in your traces, no boilerplate, no framework required.
+Trace what your methods received, returned, and threw — without writing a single span. No framework required.
 
 This is a read-only sub-split. Please open issues and pull requests in the [monorepo](https://github.com/eerzho/opentelemetry-auto-class-monorepo).
 
@@ -40,13 +40,12 @@ class Address
 }
 ```
 
-### 1. `#[Trace]` — a span per method
+### 1. `#[Trace]` — mark a class for tracing
 
 ```php
 use Eerzho\Instrumentation\Class\Attribute\Trace;
 
-#[Trace(exclude: ['healthCheck'])]   // trace every public method but healthCheck
-// #[Trace(include: ['pay'])]        // or: only pay
+#[Trace]   // mark the class for tracing
 class OrderService
 {
     public function pay(int $orderId, string $card, Address $address): string {}
@@ -54,7 +53,7 @@ class OrderService
 }
 ```
 
-### 2. `#[TraceMethod]` — capture arguments, return value, and exceptions
+### 2. `#[TraceMethod]` — trace a method
 
 ```php
 use Eerzho\Instrumentation\Class\Attribute\TraceMethod;
@@ -64,7 +63,7 @@ use Eerzho\Instrumentation\Class\Attribute\TraceMethod;
 public function pay(int $orderId, string $card, Address $address): string {}
 ```
 
-By default, it captures the arguments and the return value, and records exceptions. Turn each off with `arguments: false`, `return: false`, or `exception: false` (a disabled exception still sets the span status to `ERROR`, only its event is omitted).
+A method gets a span with `#[TraceMethod]`. By default, it captures the arguments and the return value, and records exceptions. Turn each off with `arguments: false`, `return: false`, or `exception: false` (a disabled exception still sets the span status to `ERROR`, only its event is omitted).
 
 ### 3. `#[TraceProperties]` — expand an object argument
 
@@ -114,7 +113,7 @@ Each method maps to its `arguments` (`name => position`) plus the `return` and `
 
 ### Selecting what to trace
 
-`include` and `exclude` behave the same wherever they appear — `#[Trace]`, `#[TraceMethod]`, `#[TraceProperties]`:
+`include` and `exclude` behave the same wherever they appear — `#[TraceMethod]` (arguments) and `#[TraceProperties]` (properties):
 
 | `include` | `exclude` | Result                                    |
 |-----------|-----------|-------------------------------------------|
@@ -125,7 +124,7 @@ Each method maps to its `arguments` (`name => position`) plus the `return` and `
 
 An empty `include` means "no allowlist" (everything), **not** "nothing".
 
-Only **public** methods are traced and only **public** properties are expanded — protected and private are ignored.
+Only **public** properties are expanded — non-public properties are ignored.
 
 ### Argument serialization
 
@@ -179,7 +178,7 @@ With `exception: false` the status still becomes `ERROR`, but the event above is
 
 1. Skips abstract classes, interfaces, traits, and enums.
 2. Reads `#[Trace]` on the class — no attribute, no instrumentation.
-3. Collects the public methods allowed by `include` / `exclude`, and for each the arguments, return value, and exception recording configured by `#[TraceMethod]`.
+3. Collects every method carrying `#[TraceMethod]`, and for each the arguments, return value, and exception recording it configures.
 
 It returns a `class → method → {arguments, return, exception}` map. `ClassInstrumentation::register()` then installs an `ext-opentelemetry` hook on every mapped method:
 

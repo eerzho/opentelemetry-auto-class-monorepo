@@ -65,15 +65,15 @@ final class AttributeScanner
      */
     private static function scanMethods(ReflectionClass $class): array
     {
-        $attribute = self::findTrace($class);
-        if ($attribute === null) {
+        if (self::findTrace($class) === null) {
             return [];
         }
 
         $methodsMap = [];
-        foreach ($class->getMethods(ReflectionMethod::IS_PUBLIC) as $method) {
-            if (self::isAllowed($method->getName(), $attribute->include, $attribute->exclude)) {
-                $methodsMap[$method->getName()] = self::scanMethod($method);
+        foreach ($class->getMethods() as $method) {
+            $attribute = self::findTraceMethod($method);
+            if ($attribute !== null) {
+                $methodsMap[$method->getName()] = self::scanMethod($method, $attribute);
             }
         }
 
@@ -83,13 +83,8 @@ final class AttributeScanner
     /**
      * @return array{arguments: array<string, int>, return: bool, exception: bool}
      */
-    private static function scanMethod(ReflectionMethod $method): array
+    private static function scanMethod(ReflectionMethod $method, TraceMethod $attribute): array
     {
-        $attribute = self::findTraceMethod($method);
-        if ($attribute === null) {
-            return ['arguments' => [], 'return' => false, 'exception' => false];
-        }
-
         $arguments = [];
         if ($attribute->arguments) {
             foreach ($method->getParameters() as $parameter) {
