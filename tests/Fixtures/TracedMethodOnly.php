@@ -7,7 +7,7 @@ namespace Eerzho\Instrumentation\Class\Tests\Fixtures;
 use Eerzho\Instrumentation\Class\Attribute\Trace;
 
 #[Trace]
-final class TraceWithoutArguments
+final class TracedMethodOnly
 {
     public function handle(string $name): void
     {
