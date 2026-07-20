@@ -48,7 +48,7 @@ trait ClassGenerator
                         public function delete(int \$id): void {}
                         public function import(array \$items, bool \$force, ?\\DateTimeImmutable \$scheduledAt = null): void {}
                         public function export(string \$format, array \$filters): string { return ''; }
-                        #[\\Eerzho\\Instrumentation\\Class\\Attribute\\TraceArguments(exclude: ['password', 'token'])]
+                        #[\\Eerzho\\Instrumentation\\Class\\Attribute\\TraceMethod(exclude: ['password', 'token'])]
                         public function authenticate(string \$login, string \$password, string \$token): bool { return true; }
                     }
                 ");

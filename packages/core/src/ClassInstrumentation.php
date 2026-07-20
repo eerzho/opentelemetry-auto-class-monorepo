@@ -37,7 +37,7 @@ final class ClassInstrumentation
     public const NAME = 'class';
 
     /**
-     * @param array<class-string, array<string, array<string, int>>> $classesMap
+     * @param array<class-string, array<string, array{arguments?: array<string, int>, return?: bool, exception?: bool}>> $classesMap
      */
     public static function register(array $classesMap): void
     {
@@ -47,22 +47,24 @@ final class ClassInstrumentation
         );
 
         foreach ($classesMap as $class => $methods) {
-            foreach ($methods as $method => $arguments) {
-                self::registerHook($instrumentation, $class, $method, $arguments);
+            foreach ($methods as $method => $config) {
+                self::registerHook($instrumentation, $class, $method, $config);
             }
         }
     }
 
     /**
-     * @param array<string, int> $arguments
+     * @param array{arguments?: array<string, int>, return?: bool, exception?: bool} $config
      */
     private static function registerHook(
         CachedInstrumentation $instrumentation,
         string $class,
         string $method,
-        array $arguments,
+        array $config,
     ): void {
-        $positionToName = array_flip($arguments);
+        $positionToName = array_flip($config['arguments'] ?? []);
+        $captureReturn = $config['return'] ?? false;
+        $recordException = $config['exception'] ?? false;
 
         hook(
             $class,
@@ -85,6 +87,7 @@ final class ClassInstrumentation
                 foreach ($positionToName as $position => $name) {
                     if (array_key_exists($position, $params)) {
                         foreach (self::serialize($name, $params[$position]) as $key => $value) {
+                            assert($key !== '');
                             $builder->setAttribute($key, $value);
                         }
                     }
@@ -98,7 +101,7 @@ final class ClassInstrumentation
                 array $params,
                 mixed $returnValue,
                 ?Throwable $exception,
-            ): void {
+            ) use ($captureReturn, $recordException): void {
                 $scope = Context::storage()->scope();
                 if ($scope === null) {
                     return;
@@ -108,8 +111,17 @@ final class ClassInstrumentation
                 $span = Span::fromContext($scope->context());
 
                 if ($exception !== null) {
-                    $span->recordException($exception);
-                    $span->setStatus(StatusCode::STATUS_ERROR, $exception->getMessage());
+                    if ($recordException) {
+                        $span->recordException($exception);
+                        $span->setStatus(StatusCode::STATUS_ERROR, $exception->getMessage());
+                    } else {
+                        $span->setStatus(StatusCode::STATUS_ERROR);
+                    }
+                } elseif ($captureReturn) {
+                    foreach (self::serialize('code.return', $returnValue) as $key => $value) {
+                        assert($key !== '');
+                        $span->setAttribute($key, $value);
+                    }
                 }
 
                 $span->end();

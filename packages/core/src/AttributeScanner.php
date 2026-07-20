@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Eerzho\Instrumentation\Class;
 
 use Eerzho\Instrumentation\Class\Attribute\Trace;
-use Eerzho\Instrumentation\Class\Attribute\TraceArguments;
+use Eerzho\Instrumentation\Class\Attribute\TraceMethod;
 use ReflectionClass;
 use ReflectionException;
 use ReflectionMethod;
@@ -20,7 +20,7 @@ final class AttributeScanner
      *
      * @throws ReflectionException
      *
-     * @return array<class-string, array<string, array<string, int>>>
+     * @return array<class-string, array<string, array{arguments: array<string, int>, return: bool, exception: bool}>>
      */
     public static function scan(array $classes): array
     {
@@ -41,7 +41,7 @@ final class AttributeScanner
      *
      * @throws ReflectionException
      *
-     * @return array<string, array<string, int>>
+     * @return array<string, array{arguments: array<string, int>, return: bool, exception: bool}>
      */
     private static function scanClass(string $class): array
     {
@@ -61,7 +61,7 @@ final class AttributeScanner
     /**
      * @param ReflectionClass<object> $class
      *
-     * @return array<string, array<string, int>>
+     * @return array<string, array{arguments: array<string, int>, return: bool, exception: bool}>
      */
     private static function scanMethods(ReflectionClass $class): array
     {
@@ -73,7 +73,7 @@ final class AttributeScanner
         $methodsMap = [];
         foreach ($class->getMethods(ReflectionMethod::IS_PUBLIC) as $method) {
             if (self::isAllowed($method->getName(), $attribute->include, $attribute->exclude)) {
-                $methodsMap[$method->getName()] = self::scanArguments($method);
+                $methodsMap[$method->getName()] = self::scanMethod($method);
             }
         }
 
@@ -81,24 +81,30 @@ final class AttributeScanner
     }
 
     /**
-     * @return array<string, int>
+     * @return array{arguments: array<string, int>, return: bool, exception: bool}
      */
-    private static function scanArguments(ReflectionMethod $method): array
+    private static function scanMethod(ReflectionMethod $method): array
     {
-        $attribute = self::findTraceArguments($method);
+        $attribute = self::findTraceMethod($method);
         if ($attribute === null) {
-            return [];
+            return ['arguments' => [], 'return' => false, 'exception' => false];
         }
 
         $arguments = [];
-        foreach ($method->getParameters() as $parameter) {
-            $name = $parameter->getName();
-            if (self::isAllowed($name, $attribute->include, $attribute->exclude)) {
-                $arguments[$name] = $parameter->getPosition();
+        if ($attribute->arguments) {
+            foreach ($method->getParameters() as $parameter) {
+                $name = $parameter->getName();
+                if (self::isAllowed($name, $attribute->include, $attribute->exclude)) {
+                    $arguments[$name] = $parameter->getPosition();
+                }
             }
         }
 
-        return $arguments;
+        return [
+            'arguments' => $arguments,
+            'return' => $attribute->return,
+            'exception' => $attribute->exception,
+        ];
     }
 
     /**
@@ -127,12 +133,12 @@ final class AttributeScanner
         return $instance;
     }
 
-    private static function findTraceArguments(ReflectionMethod $method): ?TraceArguments
+    private static function findTraceMethod(ReflectionMethod $method): ?TraceMethod
     {
-        $attributes = $method->getAttributes(TraceArguments::class);
+        $attributes = $method->getAttributes(TraceMethod::class);
         $instance = $attributes !== [] ? $attributes[0]->newInstance() : null;
 
-        assert($instance instanceof TraceArguments || $instance === null);
+        assert($instance instanceof TraceMethod || $instance === null);
 
         return $instance;
     }

@@ -49,14 +49,14 @@ Add `#[Trace]` to any class in a scanned namespace:
 namespace App\Services;
 
 use Eerzho\Instrumentation\Class\Attribute\Trace;
-use Eerzho\Instrumentation\Class\Attribute\TraceArguments;
+use Eerzho\Instrumentation\Class\Attribute\TraceMethod;
 use Eerzho\Instrumentation\Class\Attribute\TraceProperties;
 
 #[Trace(exclude: ['healthCheck'])]         // trace public methods, but hide "healthCheck"
 class OrderService
 {
     // span "App\Services\OrderService::pay"
-    #[TraceArguments(exclude: ['card'])]   // hide "card" from the span
+    #[TraceMethod(exclude: ['card'])]   // hide "card" from the span
     public function pay(int $orderId, string $card, Address $address): void {}
 
     public function healthCheck(): bool {}

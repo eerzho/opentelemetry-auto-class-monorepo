@@ -30,7 +30,7 @@
     "php": ">=8.2",
     "ext-opentelemetry": "*",
     "open-telemetry/api": "^1.0",
-    "eerzho/opentelemetry-auto-class": "^0.3",
+    "eerzho/opentelemetry-auto-class": "self.version",
     "illuminate/support": "^11.0 || ^12.0 || ^13.0"
   },
   "autoload": {

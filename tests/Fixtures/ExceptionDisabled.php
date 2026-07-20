@@ -6,12 +6,14 @@ namespace Eerzho\Instrumentation\Class\Tests\Fixtures;
 
 use Eerzho\Instrumentation\Class\Attribute\Trace;
 use Eerzho\Instrumentation\Class\Attribute\TraceMethod;
+use RuntimeException;
 
 #[Trace]
-final class ObjectArgument
+final class ExceptionDisabled
 {
-    #[TraceMethod]
-    public function process(object $item): void
+    #[TraceMethod(exception: false)]
+    public function execute(): void
     {
+        throw new RuntimeException('boom');
     }
 }
