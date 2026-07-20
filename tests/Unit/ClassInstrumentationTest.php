@@ -346,23 +346,49 @@ final class ClassInstrumentationTest extends TestCase
         self::assertCount(1, $this->storage);
         $span = $this->storage[0];
         self::assertInstanceOf(ImmutableSpan::class, $span);
-        self::assertSame('{"a":1,"b":2}', $span->getAttributes()->get('code.argument.value'));
+        $attributes = $span->getAttributes();
+        self::assertSame(1, $attributes->get('code.argument.value.a'));
+        self::assertFalse($attributes->has('code.argument.value.b')); // only the first element is sampled
+        self::assertSame(2, $attributes->get('code.argument.value.array_count'));
     }
 
     /**
      * @throws ReflectionException
      */
-    public function testRegisterArrayArgumentWithJsonException(): void
+    public function testRegisterArrayOfObjectsArgument(): void
     {
         $map = AttributeScanner::scan([MixedArgument::class]);
         ClassInstrumentation::register($map);
 
-        (new MixedArgument())->process([NAN]);
+        (new MixedArgument())->process([
+            new AddressDto('Almaty', '050000'),
+            new AddressDto('Astana', '010000'),
+        ]);
 
         self::assertCount(1, $this->storage);
         $span = $this->storage[0];
         self::assertInstanceOf(ImmutableSpan::class, $span);
-        self::assertSame('array', $span->getAttributes()->get('code.argument.value'));
+        $attributes = $span->getAttributes();
+        self::assertSame('Almaty', $attributes->get('code.argument.value.0.city'));
+        self::assertSame('050000', $attributes->get('code.argument.value.0.zip'));
+        self::assertFalse($attributes->has('code.argument.value.1.city')); // only the first element is sampled
+        self::assertSame(2, $attributes->get('code.argument.value.array_count'));
+    }
+
+    /**
+     * @throws ReflectionException
+     */
+    public function testRegisterEmptyArrayArgument(): void
+    {
+        $map = AttributeScanner::scan([MixedArgument::class]);
+        ClassInstrumentation::register($map);
+
+        (new MixedArgument())->process([]);
+
+        self::assertCount(1, $this->storage);
+        $span = $this->storage[0];
+        self::assertInstanceOf(ImmutableSpan::class, $span);
+        self::assertSame(0, $span->getAttributes()->get('code.argument.value.array_count'));
     }
 
     /**
