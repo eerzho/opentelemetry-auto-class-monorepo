@@ -2,7 +2,8 @@
 
 $finder = (new PhpCsFixer\Finder())
     ->in([__DIR__ . '/packages', __DIR__ . '/tests'])
-    ->notPath('vendor');
+    ->notPath('vendor')
+    ->exclude('Fixtures');
 
 return (new PhpCsFixer\Config())
     ->setCacheFile('var/.php-cs-fixer.cache')
