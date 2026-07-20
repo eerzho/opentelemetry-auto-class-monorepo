@@ -8,10 +8,11 @@ use Eerzho\Instrumentation\Class\Attribute\Trace;
 use Eerzho\Instrumentation\Class\Attribute\TraceMethod;
 
 #[Trace]
-final class ObjectArgument
+final class ReturnDisabled
 {
-    #[TraceMethod]
-    public function process(object $item): void
+    #[TraceMethod(return: false)]
+    public function compute(): string
     {
+        return 'result';
     }
 }

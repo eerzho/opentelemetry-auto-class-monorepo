@@ -30,7 +30,7 @@
     "php": ">=8.2",
     "ext-opentelemetry": "*",
     "open-telemetry/api": "^1.0",
-    "eerzho/opentelemetry-auto-class": "^0.3",
+    "eerzho/opentelemetry-auto-class": "self.version",
     "symfony/http-kernel": "^6.0 || ^7.0 || ^8.0",
     "symfony/dependency-injection": "^6.0 || ^7.0 || ^8.0"
   },

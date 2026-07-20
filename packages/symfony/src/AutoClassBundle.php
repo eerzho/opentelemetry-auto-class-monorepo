@@ -61,7 +61,7 @@ final class AutoClassBundle extends Bundle implements CompilerPassInterface
             return;
         }
 
-        /** @var array<class-string, array<string, array<string, int>>> $classesMap */
+        /** @var array<class-string, array<string, array{arguments?: array<string, int>, return?: bool, exception?: bool}>> $classesMap */
         $classesMap = $this->container->getParameter('otel.trace.classes_map');
         ClassInstrumentation::register($classesMap);
     }

@@ -30,7 +30,7 @@ namespace App\Service;
 
 class OrderService
 {
-    public function pay(int $orderId, string $card, Address $address): void {}
+    public function pay(int $orderId, string $card, Address $address): string {}
     public function healthCheck(): bool {}
 }
 
@@ -49,20 +49,22 @@ use Eerzho\Instrumentation\Class\Attribute\Trace;
 // #[Trace(include: ['pay'])]        // or: only pay
 class OrderService
 {
-    public function pay(int $orderId, string $card, Address $address): void {}
+    public function pay(int $orderId, string $card, Address $address): string {}
     public function healthCheck(): bool {}
 }
 ```
 
-### 2. `#[TraceArguments]` — pick the captured arguments
+### 2. `#[TraceMethod]` — capture arguments, return value, and exceptions
 
 ```php
-use Eerzho\Instrumentation\Class\Attribute\TraceArguments;
+use Eerzho\Instrumentation\Class\Attribute\TraceMethod;
 
-#[TraceArguments(exclude: ['card'])]       // capture every arg but card
-// #[TraceArguments(include: ['orderId'])] // or: only orderId
-public function pay(int $orderId, string $card, Address $address): void {}
+#[TraceMethod(exclude: ['card'])]       // capture every arg but card
+// #[TraceMethod(include: ['orderId'])] // or: only orderId
+public function pay(int $orderId, string $card, Address $address): string {}
 ```
+
+By default, it captures the arguments and the return value, and records exceptions. Turn each off with `arguments: false`, `return: false`, or `exception: false` (a disabled exception still sets the span status to `ERROR`, only its event is omitted).
 
 ### 3. `#[TraceProperties]` — expand an object argument
 
@@ -95,20 +97,24 @@ Skip `AttributeScanner` and hand `register()` the method map directly:
 ```php
 ClassInstrumentation::register([
     OrderService::class => [
-        'pay'    => ['orderId' => 0],  // trace, capture orderId only
-        'cancel' => [],                // trace, capture nothing
+        'pay' => [
+            'arguments' => ['orderId' => 0],  // name => position
+            'return'    => true,
+            'exception' => true,
+        ],
+        'cancel' => ['arguments' => []],      // trace, capture nothing
         // methods not listed are not traced
     ],
 ]);
 ```
 
-Each entry maps a class → its methods → each method's arguments (`name => position`). Anything not listed is not traced or not captured.
+Each method maps to its `arguments` (`name => position`) plus the `return` and `exception` flags. Missing keys default to off. Anything not listed is not traced.
 
 ## Traced output
 
 ### Selecting what to trace
 
-`include` and `exclude` behave the same wherever they appear — `#[Trace]`, `#[TraceArguments]`, `#[TraceProperties]`:
+`include` and `exclude` behave the same wherever they appear — `#[Trace]`, `#[TraceMethod]`, `#[TraceProperties]`:
 
 | `include` | `exclude` | Result                                    |
 |-----------|-----------|-------------------------------------------|
@@ -149,12 +155,13 @@ Object expansion via `#[TraceProperties]`:
 
 Each traced call produces an `INTERNAL` span named `ClassName::methodName`, with:
 
-| Attribute            | Value                             |
-|----------------------|-----------------------------------|
-| `code.function.name` | `ClassName::methodName`           |
-| `code.file.path`     | File where the method is defined  |
-| `code.line.number`   | Line number of the method         |
-| Method arguments     | Parameter name → serialized value |
+| Attribute            | Value                                                                      |
+|----------------------|----------------------------------------------------------------------------|
+| `code.function.name` | `ClassName::methodName`                                                    |
+| `code.file.path`     | File where the method is defined                                           |
+| `code.line.number`   | Line number of the method                                                  |
+| `code.return`        | Return value, serialized the same way (on success, unless `return: false`) |
+| Method arguments     | Parameter name → serialized value                                          |
 
 If the method throws, the span records an `exception` event and its status is set to `ERROR`:
 
@@ -164,18 +171,20 @@ If the method throws, the span records an `exception` event and its status is se
 | `exception.message`    | Exception message    |
 | `exception.stacktrace` | Full stack trace     |
 
+With `exception: false` the status still becomes `ERROR`, but the event above is omitted.
+
 ## How it works
 
 `AttributeScanner::scan()` reflects over the classes you pass it:
 
 1. Skips abstract classes, interfaces, traits, and enums.
 2. Reads `#[Trace]` on the class — no attribute, no instrumentation.
-3. Collects the public methods allowed by `include` / `exclude`, and for each the arguments allowed by `#[TraceArguments]`.
+3. Collects the public methods allowed by `include` / `exclude`, and for each the arguments, return value, and exception recording configured by `#[TraceMethod]`.
 
-It returns a `class → method → {argument: position}` map. `ClassInstrumentation::register()` then installs an `ext-opentelemetry` hook on every mapped method:
+It returns a `class → method → {arguments, return, exception}` map. `ClassInstrumentation::register()` then installs an `ext-opentelemetry` hook on every mapped method:
 
 - **pre** — opens the span and attaches the `code.*` attributes and serialized arguments.
-- **post** — records the exception and sets `ERROR` status if the method threw, then ends the span.
+- **post** — captures the return value on success, records the exception and sets `ERROR` status on failure, then ends the span.
 
 ## Disabling instrumentation
 

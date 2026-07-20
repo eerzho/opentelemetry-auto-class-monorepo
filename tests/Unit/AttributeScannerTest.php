@@ -4,32 +4,30 @@ declare(strict_types=1);
 
 namespace Eerzho\Instrumentation\Class\Tests\Unit;
 
-use Eerzho\Instrumentation\Class\Attribute\Trace;
-use Eerzho\Instrumentation\Class\Attribute\TraceArguments;
 use Eerzho\Instrumentation\Class\AttributeScanner;
+use Eerzho\Instrumentation\Class\Tests\Fixtures\ArgumentsDisabled;
+use Eerzho\Instrumentation\Class\Tests\Fixtures\ExceptionDisabled;
 use Eerzho\Instrumentation\Class\Tests\Fixtures\ExcludedArguments;
 use Eerzho\Instrumentation\Class\Tests\Fixtures\ExcludedMethods;
 use Eerzho\Instrumentation\Class\Tests\Fixtures\IncludedArguments;
 use Eerzho\Instrumentation\Class\Tests\Fixtures\IncludedMethods;
 use Eerzho\Instrumentation\Class\Tests\Fixtures\MixedVisibility;
 use Eerzho\Instrumentation\Class\Tests\Fixtures\MultipleArguments;
-use Eerzho\Instrumentation\Class\Tests\Fixtures\TraceArgumentsWithoutTrace;
+use Eerzho\Instrumentation\Class\Tests\Fixtures\ReturnDisabled;
 use Eerzho\Instrumentation\Class\Tests\Fixtures\TracedAbstractClass;
 use Eerzho\Instrumentation\Class\Tests\Fixtures\TracedClass;
 use Eerzho\Instrumentation\Class\Tests\Fixtures\TracedEnum;
 use Eerzho\Instrumentation\Class\Tests\Fixtures\TracedInterface;
+use Eerzho\Instrumentation\Class\Tests\Fixtures\TracedMethodOnly;
 use Eerzho\Instrumentation\Class\Tests\Fixtures\TracedTrait;
+use Eerzho\Instrumentation\Class\Tests\Fixtures\TraceMethodWithoutTrace;
 use Eerzho\Instrumentation\Class\Tests\Fixtures\WithoutTraceClass;
-use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use ReflectionException;
 
 /**
  * @internal
  */
-#[CoversClass(Trace::class)]
-#[CoversClass(TraceArguments::class)]
-#[CoversClass(AttributeScanner::class)]
 final class AttributeScannerTest extends TestCase
 {
     /**
@@ -51,9 +49,9 @@ final class AttributeScannerTest extends TestCase
     /**
      * @throws ReflectionException
      */
-    public function testScanClassWithArgumentsButWithoutTrace(): void
+    public function testScanTraceMethodWithoutTrace(): void
     {
-        self::assertSame([], AttributeScanner::scan([TraceArgumentsWithoutTrace::class]));
+        self::assertSame([], AttributeScanner::scan([TraceMethodWithoutTrace::class]));
     }
 
     /**
@@ -97,8 +95,22 @@ final class AttributeScannerTest extends TestCase
 
         self::assertSame([
             TracedClass::class => [
-                'greet' => ['name' => 0],
-                'add' => ['a' => 0, 'b' => 1],
+                'greet' => ['arguments' => ['name' => 0], 'return' => true, 'exception' => true],
+                'add' => ['arguments' => ['a' => 0, 'b' => 1], 'return' => true, 'exception' => true],
+            ],
+        ], $result);
+    }
+
+    /**
+     * @throws ReflectionException
+     */
+    public function testScanMethodWithoutTraceMethod(): void
+    {
+        $result = AttributeScanner::scan([TracedMethodOnly::class]);
+
+        self::assertSame([
+            TracedMethodOnly::class => [
+                'handle' => ['arguments' => [], 'return' => false, 'exception' => false],
             ],
         ], $result);
     }
@@ -112,7 +124,7 @@ final class AttributeScannerTest extends TestCase
 
         self::assertSame([
             ExcludedMethods::class => [
-                'visible' => [],
+                'visible' => ['arguments' => [], 'return' => false, 'exception' => false],
             ],
         ], $result);
     }
@@ -126,10 +138,7 @@ final class AttributeScannerTest extends TestCase
 
         self::assertSame([
             ExcludedArguments::class => [
-                'process' => [
-                    'first' => 0,
-                    'third' => 2,
-                ],
+                'process' => ['arguments' => ['first' => 0, 'third' => 2], 'return' => true, 'exception' => true],
             ],
         ], $result);
     }
@@ -143,7 +152,7 @@ final class AttributeScannerTest extends TestCase
 
         self::assertSame([
             MixedVisibility::class => [
-                'publicMethod' => [],
+                'publicMethod' => ['arguments' => [], 'return' => false, 'exception' => false],
             ],
         ], $result);
     }
@@ -158,27 +167,9 @@ final class AttributeScannerTest extends TestCase
         self::assertSame([
             MultipleArguments::class => [
                 'execute' => [
-                    'first' => 0,
-                    'second' => 1,
-                    'third' => 2,
-                    'fourth' => 3,
-                ],
-            ],
-        ], $result);
-    }
-
-    /**
-     * @throws ReflectionException
-     */
-    public function testScanPreservedArgumentPositions(): void
-    {
-        $result = AttributeScanner::scan([ExcludedArguments::class]);
-
-        self::assertSame([
-            ExcludedArguments::class => [
-                'process' => [
-                    'first' => 0,
-                    'third' => 2,
+                    'arguments' => ['first' => 0, 'second' => 1, 'third' => 2, 'fourth' => 3],
+                    'return' => true,
+                    'exception' => true,
                 ],
             ],
         ], $result);
@@ -193,7 +184,7 @@ final class AttributeScannerTest extends TestCase
 
         self::assertSame([
             IncludedMethods::class => [
-                'visible' => [],
+                'visible' => ['arguments' => [], 'return' => false, 'exception' => false],
             ],
         ], $result);
     }
@@ -207,10 +198,49 @@ final class AttributeScannerTest extends TestCase
 
         self::assertSame([
             IncludedArguments::class => [
-                'process' => [
-                    'first' => 0,
-                    'third' => 2,
-                ],
+                'process' => ['arguments' => ['first' => 0, 'third' => 2], 'return' => true, 'exception' => true],
+            ],
+        ], $result);
+    }
+
+    /**
+     * @throws ReflectionException
+     */
+    public function testScanArgumentsDisabled(): void
+    {
+        $result = AttributeScanner::scan([ArgumentsDisabled::class]);
+
+        self::assertSame([
+            ArgumentsDisabled::class => [
+                'process' => ['arguments' => [], 'return' => true, 'exception' => true],
+            ],
+        ], $result);
+    }
+
+    /**
+     * @throws ReflectionException
+     */
+    public function testScanReturnDisabled(): void
+    {
+        $result = AttributeScanner::scan([ReturnDisabled::class]);
+
+        self::assertSame([
+            ReturnDisabled::class => [
+                'compute' => ['arguments' => [], 'return' => false, 'exception' => true],
+            ],
+        ], $result);
+    }
+
+    /**
+     * @throws ReflectionException
+     */
+    public function testScanExceptionDisabled(): void
+    {
+        $result = AttributeScanner::scan([ExceptionDisabled::class]);
+
+        self::assertSame([
+            ExceptionDisabled::class => [
+                'execute' => ['arguments' => [], 'return' => true, 'exception' => false],
             ],
         ], $result);
     }

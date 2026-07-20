@@ -10,10 +10,12 @@ use DateTimeInterface;
 use Eerzho\Instrumentation\Class\AttributeScanner;
 use Eerzho\Instrumentation\Class\ClassInstrumentation;
 use Eerzho\Instrumentation\Class\Tests\Fixtures\AddressDto;
+use Eerzho\Instrumentation\Class\Tests\Fixtures\ArgumentsDisabled;
 use Eerzho\Instrumentation\Class\Tests\Fixtures\ArrayArgument;
 use Eerzho\Instrumentation\Class\Tests\Fixtures\BackedEnumArgument;
 use Eerzho\Instrumentation\Class\Tests\Fixtures\DateTimeArgument;
 use Eerzho\Instrumentation\Class\Tests\Fixtures\DtoService;
+use Eerzho\Instrumentation\Class\Tests\Fixtures\ExceptionDisabled;
 use Eerzho\Instrumentation\Class\Tests\Fixtures\ExcludedArguments;
 use Eerzho\Instrumentation\Class\Tests\Fixtures\ExcludedMethods;
 use Eerzho\Instrumentation\Class\Tests\Fixtures\FilteredDto;
@@ -25,12 +27,15 @@ use Eerzho\Instrumentation\Class\Tests\Fixtures\NodeDto;
 use Eerzho\Instrumentation\Class\Tests\Fixtures\NullableArgument;
 use Eerzho\Instrumentation\Class\Tests\Fixtures\ObjectArgument;
 use Eerzho\Instrumentation\Class\Tests\Fixtures\PlainValue;
+use Eerzho\Instrumentation\Class\Tests\Fixtures\ReturnDisabled;
+use Eerzho\Instrumentation\Class\Tests\Fixtures\ReturnValue;
 use Eerzho\Instrumentation\Class\Tests\Fixtures\Status;
 use Eerzho\Instrumentation\Class\Tests\Fixtures\Stringable;
 use Eerzho\Instrumentation\Class\Tests\Fixtures\ThrowingMethod;
 use Eerzho\Instrumentation\Class\Tests\Fixtures\ThrowingStringable;
-use Eerzho\Instrumentation\Class\Tests\Fixtures\TraceArgumentsWithoutTrace;
 use Eerzho\Instrumentation\Class\Tests\Fixtures\TracedClass;
+use Eerzho\Instrumentation\Class\Tests\Fixtures\TracedMethodOnly;
+use Eerzho\Instrumentation\Class\Tests\Fixtures\TraceMethodWithoutTrace;
 use Eerzho\Instrumentation\Class\Tests\Fixtures\UninitializedDto;
 use Eerzho\Instrumentation\Class\Tests\Fixtures\UserDto;
 use Eerzho\Instrumentation\Class\Tests\Fixtures\WithoutTraceClass;
@@ -91,12 +96,12 @@ final class ClassInstrumentationTest extends TestCase
     /**
      * @throws ReflectionException
      */
-    public function testRegisterTraceArgumentsWithoutTrace(): void
+    public function testRegisterTraceMethodWithoutTrace(): void
     {
-        $map = AttributeScanner::scan([TraceArgumentsWithoutTrace::class]);
+        $map = AttributeScanner::scan([TraceMethodWithoutTrace::class]);
         ClassInstrumentation::register($map);
 
-        $service = new TraceArgumentsWithoutTrace();
+        $service = new TraceMethodWithoutTrace();
         $service->login('test@test.com', 'secret');
 
         self::assertCount(0, $this->storage);
@@ -125,6 +130,93 @@ final class ClassInstrumentationTest extends TestCase
         self::assertNotNull($attributes->get('code.file.path'));
         self::assertNotNull($attributes->get('code.line.number'));
         self::assertSame('World', $attributes->get('name'));
+    }
+
+    /**
+     * @throws ReflectionException
+     */
+    public function testRegisterCapturesReturnValue(): void
+    {
+        $map = AttributeScanner::scan([ReturnValue::class]);
+        ClassInstrumentation::register($map);
+
+        (new ReturnValue())->compute(2, 3);
+
+        self::assertCount(1, $this->storage);
+
+        $span = $this->storage[0];
+        self::assertInstanceOf(ImmutableSpan::class, $span);
+
+        $attributes = $span->getAttributes();
+        self::assertSame(ReturnValue::class . '::compute', $span->getName());
+        self::assertSame(2, $attributes->get('a'));
+        self::assertSame(3, $attributes->get('b'));
+        self::assertSame(5, $attributes->get('code.return'));
+    }
+
+    /**
+     * @throws ReflectionException
+     */
+    public function testRegisterReturnDisabled(): void
+    {
+        $map = AttributeScanner::scan([ReturnDisabled::class]);
+        ClassInstrumentation::register($map);
+
+        $service = new ReturnDisabled();
+        $service->compute();
+
+        self::assertCount(1, $this->storage);
+
+        $span = $this->storage[0];
+        self::assertInstanceOf(ImmutableSpan::class, $span);
+
+        $attributes = $span->getAttributes();
+        self::assertSame(ReturnDisabled::class . '::compute', $span->getName());
+        self::assertFalse($attributes->has('code.return'));
+    }
+
+    /**
+     * @throws ReflectionException
+     */
+    public function testRegisterArgumentsDisabled(): void
+    {
+        $map = AttributeScanner::scan([ArgumentsDisabled::class]);
+        ClassInstrumentation::register($map);
+
+        $service = new ArgumentsDisabled();
+        $service->process('secret');
+
+        self::assertCount(1, $this->storage);
+
+        $span = $this->storage[0];
+        self::assertInstanceOf(ImmutableSpan::class, $span);
+
+        $attributes = $span->getAttributes();
+        self::assertSame(ArgumentsDisabled::class . '::process', $span->getName());
+        self::assertFalse($attributes->has('value'));
+    }
+
+    /**
+     * @throws ReflectionException
+     */
+    public function testRegisterTracedMethodOnly(): void
+    {
+        $map = AttributeScanner::scan([TracedMethodOnly::class]);
+        ClassInstrumentation::register($map);
+
+        $service = new TracedMethodOnly();
+        $service->handle('World');
+
+        self::assertCount(1, $this->storage);
+
+        $span = $this->storage[0];
+        self::assertInstanceOf(ImmutableSpan::class, $span);
+
+        $attributes = $span->getAttributes();
+        self::assertSame(TracedMethodOnly::class . '::handle', $span->getName());
+        self::assertSame(TracedMethodOnly::class . '::handle', $attributes->get('code.function.name'));
+        self::assertFalse($attributes->has('name'));
+        self::assertFalse($attributes->has('code.return'));
     }
 
     /**
@@ -469,6 +561,34 @@ final class ClassInstrumentationTest extends TestCase
         self::assertSame('exception', $events[0]->getName());
         self::assertSame('RuntimeException', $events[0]->getAttributes()->get('exception.type'));
         self::assertSame('something went wrong', $events[0]->getAttributes()->get('exception.message'));
+    }
+
+    /**
+     * @throws ReflectionException
+     */
+    public function testRegisterExceptionDisabled(): void
+    {
+        $map = AttributeScanner::scan([ExceptionDisabled::class]);
+        ClassInstrumentation::register($map);
+
+        $service = new ExceptionDisabled();
+
+        try {
+            $service->execute();
+        } catch (RuntimeException) {
+        }
+
+        self::assertCount(1, $this->storage);
+
+        $span = $this->storage[0];
+        self::assertInstanceOf(ImmutableSpan::class, $span);
+
+        $status = $span->getStatus();
+
+        // status still flips to ERROR, but the exception details are not recorded
+        self::assertSame(StatusCode::STATUS_ERROR, $status->getCode());
+        self::assertSame('', $status->getDescription());
+        self::assertCount(0, $span->getEvents());
     }
 
     /**
