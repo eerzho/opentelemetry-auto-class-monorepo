@@ -7,7 +7,6 @@ namespace Eerzho\Instrumentation\Class;
 use BackedEnum;
 use DateTimeInterface;
 use Eerzho\Instrumentation\Class\Attribute\TraceProperties;
-use JsonException;
 use OpenTelemetry\API\Instrumentation\CachedInstrumentation;
 use OpenTelemetry\API\Trace\Span;
 use OpenTelemetry\API\Trace\SpanKind;
@@ -20,13 +19,13 @@ use Throwable;
 
 use function array_key_exists;
 use function assert;
+use function count;
 use function get_class;
 use function gettype;
 use function in_array;
 use function is_array;
 use function is_object;
 use function is_scalar;
-use function json_encode;
 use function method_exists;
 use function OpenTelemetry\Instrumentation\hook;
 use function spl_object_id;
@@ -85,7 +84,7 @@ final class ClassInstrumentation
 
                 foreach ($positionToName as $position => $name) {
                     if (array_key_exists($position, $params)) {
-                        foreach (self::serialize($name, $params[$position]) as $key => $value) {
+                        foreach (self::serialize('code.argument.' . $name, $params[$position]) as $key => $value) {
                             assert($key !== '');
                             $builder->setAttribute($key, $value);
                         }
@@ -193,10 +192,15 @@ final class ClassInstrumentation
         }
 
         if (is_array($value)) {
-            try {
-                return [$key => (string) json_encode($value, JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR)];
-            } catch (JsonException) {
+            $result = [];
+            foreach ($value as $k => $v) {
+                $result += self::serialize($key . '.' . $k, $v, $seen);
+
+                break;
             }
+            $result[$key . '.array_count'] = count($value);
+
+            return $result;
         }
 
         return [$key => gettype($value)];

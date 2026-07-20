@@ -122,7 +122,7 @@ final class ClassInstrumentationTest extends TestCase
         self::assertSame(TracedClass::class . '::greet', $attributes->get('code.function.name'));
         self::assertNotNull($attributes->get('code.file.path'));
         self::assertNotNull($attributes->get('code.line.number'));
-        self::assertSame('World', $attributes->get('name'));
+        self::assertSame('World', $attributes->get('code.argument.name'));
     }
 
     /**
@@ -142,8 +142,8 @@ final class ClassInstrumentationTest extends TestCase
 
         $attributes = $span->getAttributes();
         self::assertSame(ReturnValue::class . '::compute', $span->getName());
-        self::assertSame(2, $attributes->get('a'));
-        self::assertSame(3, $attributes->get('b'));
+        self::assertSame(2, $attributes->get('code.argument.a'));
+        self::assertSame(3, $attributes->get('code.argument.b'));
         self::assertSame(5, $attributes->get('code.return'));
     }
 
@@ -186,7 +186,7 @@ final class ClassInstrumentationTest extends TestCase
 
         $attributes = $span->getAttributes();
         self::assertSame(ArgumentsDisabled::class . '::process', $span->getName());
-        self::assertFalse($attributes->has('value'));
+        self::assertFalse($attributes->has('code.argument.value'));
     }
 
     /**
@@ -204,9 +204,9 @@ final class ClassInstrumentationTest extends TestCase
         self::assertInstanceOf(ImmutableSpan::class, $span);
 
         $attributes = $span->getAttributes();
-        self::assertSame('a', $attributes->get('first'));
-        self::assertSame('c', $attributes->get('third'));
-        self::assertFalse($attributes->has('second'));
+        self::assertSame('a', $attributes->get('code.argument.first'));
+        self::assertSame('c', $attributes->get('code.argument.third'));
+        self::assertFalse($attributes->has('code.argument.second'));
     }
 
     /**
@@ -246,10 +246,10 @@ final class ClassInstrumentationTest extends TestCase
         self::assertInstanceOf(ImmutableSpan::class, $span);
 
         $attributes = $span->getAttributes();
-        self::assertSame('hello', $attributes->get('first'));
-        self::assertSame(42, $attributes->get('second'));
-        self::assertTrue($attributes->get('third'));
-        self::assertSame(3.14, $attributes->get('fourth'));
+        self::assertSame('hello', $attributes->get('code.argument.first'));
+        self::assertSame(42, $attributes->get('code.argument.second'));
+        self::assertTrue($attributes->get('code.argument.third'));
+        self::assertSame(3.14, $attributes->get('code.argument.fourth'));
     }
 
     /**
@@ -265,7 +265,7 @@ final class ClassInstrumentationTest extends TestCase
         self::assertCount(1, $this->storage);
         $span = $this->storage[0];
         self::assertInstanceOf(ImmutableSpan::class, $span);
-        self::assertSame('null', $span->getAttributes()->get('value'));
+        self::assertSame('null', $span->getAttributes()->get('code.argument.value'));
     }
 
     /**
@@ -281,7 +281,7 @@ final class ClassInstrumentationTest extends TestCase
         self::assertCount(1, $this->storage);
         $span = $this->storage[0];
         self::assertInstanceOf(ImmutableSpan::class, $span);
-        self::assertSame('active', $span->getAttributes()->get('value'));
+        self::assertSame('active', $span->getAttributes()->get('code.argument.value'));
     }
 
     /**
@@ -298,7 +298,7 @@ final class ClassInstrumentationTest extends TestCase
         self::assertCount(1, $this->storage);
         $span = $this->storage[0];
         self::assertInstanceOf(ImmutableSpan::class, $span);
-        self::assertSame($at->format(DateTimeInterface::RFC3339_EXTENDED), $span->getAttributes()->get('value'));
+        self::assertSame($at->format(DateTimeInterface::RFC3339_EXTENDED), $span->getAttributes()->get('code.argument.value'));
     }
 
     /**
@@ -314,7 +314,7 @@ final class ClassInstrumentationTest extends TestCase
         self::assertCount(1, $this->storage);
         $span = $this->storage[0];
         self::assertInstanceOf(ImmutableSpan::class, $span);
-        self::assertSame('hello', $span->getAttributes()->get('value'));
+        self::assertSame('hello', $span->getAttributes()->get('code.argument.value'));
     }
 
     /**
@@ -330,7 +330,7 @@ final class ClassInstrumentationTest extends TestCase
         self::assertCount(1, $this->storage);
         $span = $this->storage[0];
         self::assertInstanceOf(ImmutableSpan::class, $span);
-        self::assertSame('stdClass', $span->getAttributes()->get('value'));
+        self::assertSame('stdClass', $span->getAttributes()->get('code.argument.value'));
     }
 
     /**
@@ -346,23 +346,49 @@ final class ClassInstrumentationTest extends TestCase
         self::assertCount(1, $this->storage);
         $span = $this->storage[0];
         self::assertInstanceOf(ImmutableSpan::class, $span);
-        self::assertSame('{"a":1,"b":2}', $span->getAttributes()->get('value'));
+        $attributes = $span->getAttributes();
+        self::assertSame(1, $attributes->get('code.argument.value.a'));
+        self::assertFalse($attributes->has('code.argument.value.b')); // only the first element is sampled
+        self::assertSame(2, $attributes->get('code.argument.value.array_count'));
     }
 
     /**
      * @throws ReflectionException
      */
-    public function testRegisterArrayArgumentWithJsonException(): void
+    public function testRegisterArrayOfObjectsArgument(): void
     {
         $map = AttributeScanner::scan([MixedArgument::class]);
         ClassInstrumentation::register($map);
 
-        (new MixedArgument())->process([NAN]);
+        (new MixedArgument())->process([
+            new AddressDto('Almaty', '050000'),
+            new AddressDto('Astana', '010000'),
+        ]);
 
         self::assertCount(1, $this->storage);
         $span = $this->storage[0];
         self::assertInstanceOf(ImmutableSpan::class, $span);
-        self::assertSame('array', $span->getAttributes()->get('value'));
+        $attributes = $span->getAttributes();
+        self::assertSame('Almaty', $attributes->get('code.argument.value.0.city'));
+        self::assertSame('050000', $attributes->get('code.argument.value.0.zip'));
+        self::assertFalse($attributes->has('code.argument.value.1.city')); // only the first element is sampled
+        self::assertSame(2, $attributes->get('code.argument.value.array_count'));
+    }
+
+    /**
+     * @throws ReflectionException
+     */
+    public function testRegisterEmptyArrayArgument(): void
+    {
+        $map = AttributeScanner::scan([MixedArgument::class]);
+        ClassInstrumentation::register($map);
+
+        (new MixedArgument())->process([]);
+
+        self::assertCount(1, $this->storage);
+        $span = $this->storage[0];
+        self::assertInstanceOf(ImmutableSpan::class, $span);
+        self::assertSame(0, $span->getAttributes()->get('code.argument.value.array_count'));
     }
 
     /**
@@ -382,7 +408,7 @@ final class ClassInstrumentationTest extends TestCase
         self::assertCount(1, $this->storage);
         $span = $this->storage[0];
         self::assertInstanceOf(ImmutableSpan::class, $span);
-        self::assertSame('resource', $span->getAttributes()->get('value'));
+        self::assertSame('resource', $span->getAttributes()->get('code.argument.value'));
     }
 
     /**
@@ -461,10 +487,10 @@ final class ClassInstrumentationTest extends TestCase
         self::assertInstanceOf(ImmutableSpan::class, $span);
 
         $attributes = $span->getAttributes();
-        self::assertSame(7, $attributes->get('dto.id'));
-        self::assertSame('Ann', $attributes->get('dto.name'));
-        self::assertSame('Almaty', $attributes->get('dto.address.city'));
-        self::assertSame('050000', $attributes->get('dto.address.zip'));
+        self::assertSame(7, $attributes->get('code.argument.dto.id'));
+        self::assertSame('Ann', $attributes->get('code.argument.dto.name'));
+        self::assertSame('Almaty', $attributes->get('code.argument.dto.address.city'));
+        self::assertSame('050000', $attributes->get('code.argument.dto.address.zip'));
     }
 
     /**
@@ -484,13 +510,13 @@ final class ClassInstrumentationTest extends TestCase
 
         $attributes = $span->getAttributes();
         // one excluded per visibility -> gone
-        self::assertFalse($attributes->has('dto.publicOne'));
-        self::assertFalse($attributes->has('dto.protectedOne'));
-        self::assertFalse($attributes->has('dto.privateOne'));
+        self::assertFalse($attributes->has('code.argument.dto.publicOne'));
+        self::assertFalse($attributes->has('code.argument.dto.protectedOne'));
+        self::assertFalse($attributes->has('code.argument.dto.privateOne'));
         // the rest stay, regardless of visibility
-        self::assertSame('public-two', $attributes->get('dto.publicTwo'));
-        self::assertSame('protected-two', $attributes->get('dto.protectedTwo'));
-        self::assertSame('private-two', $attributes->get('dto.privateTwo'));
+        self::assertSame('public-two', $attributes->get('code.argument.dto.publicTwo'));
+        self::assertSame('protected-two', $attributes->get('code.argument.dto.protectedTwo'));
+        self::assertSame('private-two', $attributes->get('code.argument.dto.privateTwo'));
     }
 
     /**
@@ -511,9 +537,9 @@ final class ClassInstrumentationTest extends TestCase
         self::assertInstanceOf(ImmutableSpan::class, $span);
 
         $attributes = $span->getAttributes();
-        self::assertSame(1, $attributes->get('dto.id'));
+        self::assertSame(1, $attributes->get('code.argument.dto.id'));
         // cycle is broken: the revisited object degrades to its class name
-        self::assertSame(NodeDto::class, $attributes->get('dto.next'));
+        self::assertSame(NodeDto::class, $attributes->get('code.argument.dto.next'));
     }
 
     /**
@@ -533,7 +559,7 @@ final class ClassInstrumentationTest extends TestCase
 
         $attributes = $span->getAttributes();
         // no #[TraceProperties] on PlainValue -> falls back to class name
-        self::assertSame(PlainValue::class, $attributes->get('dto.inner'));
+        self::assertSame(PlainValue::class, $attributes->get('code.argument.dto.inner'));
     }
 
     /**
@@ -553,8 +579,8 @@ final class ClassInstrumentationTest extends TestCase
 
         $attributes = $span->getAttributes();
         // initialized property is captured, uninitialized one gets the "uninitialized" marker (no crash)
-        self::assertSame('Bob', $attributes->get('dto.name'));
-        self::assertSame('uninitialized', $attributes->get('dto.ready'));
+        self::assertSame('Bob', $attributes->get('code.argument.dto.name'));
+        self::assertSame('uninitialized', $attributes->get('code.argument.dto.ready'));
     }
 
     /**
@@ -574,7 +600,7 @@ final class ClassInstrumentationTest extends TestCase
 
         $attributes = $span->getAttributes();
         // __toString() throws -> degrades to class name, never propagates to the traced method
-        self::assertSame(ThrowingStringable::class, $attributes->get('dto'));
+        self::assertSame(ThrowingStringable::class, $attributes->get('code.argument.dto'));
     }
 
     /**
@@ -594,12 +620,12 @@ final class ClassInstrumentationTest extends TestCase
 
         $attributes = $span->getAttributes();
         // only the allowlisted one per visibility
-        self::assertSame('public-one', $attributes->get('dto.publicOne'));
-        self::assertSame('protected-one', $attributes->get('dto.protectedOne'));
-        self::assertSame('private-one', $attributes->get('dto.privateOne'));
+        self::assertSame('public-one', $attributes->get('code.argument.dto.publicOne'));
+        self::assertSame('protected-one', $attributes->get('code.argument.dto.protectedOne'));
+        self::assertSame('private-one', $attributes->get('code.argument.dto.privateOne'));
         // the rest are dropped, regardless of visibility
-        self::assertFalse($attributes->has('dto.publicTwo'));
-        self::assertFalse($attributes->has('dto.protectedTwo'));
-        self::assertFalse($attributes->has('dto.privateTwo'));
+        self::assertFalse($attributes->has('code.argument.dto.publicTwo'));
+        self::assertFalse($attributes->has('code.argument.dto.protectedTwo'));
+        self::assertFalse($attributes->has('code.argument.dto.privateTwo'));
     }
 }
