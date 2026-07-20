@@ -5,13 +5,11 @@ declare(strict_types=1);
 namespace Eerzho\Instrumentation\Class\Tests\Fixtures;
 
 use Eerzho\Instrumentation\Class\Attribute\Trace;
-use Eerzho\Instrumentation\Class\Attribute\TraceMethod;
 
 #[Trace]
-final class ArrayArgument
+final class TraceWithoutTraceMethod
 {
-    #[TraceMethod]
-    public function process(array $items): void
+    public function handle(string $name): void
     {
     }
 }

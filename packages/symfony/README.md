@@ -5,7 +5,7 @@
 [![PHP](https://img.shields.io/packagist/dependency-v/eerzho/opentelemetry-auto-class-symfony/php)](https://packagist.org/packages/eerzho/opentelemetry-auto-class-symfony)
 [![License](https://img.shields.io/packagist/l/eerzho/opentelemetry-auto-class-symfony)](https://packagist.org/packages/eerzho/opentelemetry-auto-class-symfony)
 
-One tag, full visibility — every method call in your Symfony app shows up in your traces, zero config.
+Trace what your Symfony methods received, returned, and threw — without writing a single span.
 
 The Symfony integration for [opentelemetry-auto-class](https://github.com/eerzho/opentelemetry-auto-class) — your classes are discovered and registered automatically.
 
@@ -43,17 +43,17 @@ use Eerzho\Instrumentation\Class\Attribute\Trace;
 use Eerzho\Instrumentation\Class\Attribute\TraceMethod;
 use Eerzho\Instrumentation\Class\Attribute\TraceProperties;
 
-#[Trace(exclude: ['healthCheck'])]         // trace public methods, but hide "healthCheck"
+#[Trace]                                   // mark the class for tracing
 class OrderService
 {
     // span "App\Service\OrderService::pay"
     #[TraceMethod(exclude: ['card'])]   // hide "card" from the span
     public function pay(int $orderId, string $card, Address $address): void {}
 
-    public function healthCheck(): bool {}
+    public function healthCheck(): bool {}   // no #[TraceMethod] -> not traced
 }
 
-#[TraceProperties(exclude: ['zip'])]       // expand public props, but hide "zip"
+#[TraceProperties(exclude: ['zip'])]       // expand every prop but zip
 class Address
 {
     public function __construct(public string $city, public string $zip) {}

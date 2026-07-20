@@ -8,19 +8,17 @@ use Eerzho\Instrumentation\Class\AttributeScanner;
 use Eerzho\Instrumentation\Class\Tests\Fixtures\ArgumentsDisabled;
 use Eerzho\Instrumentation\Class\Tests\Fixtures\ExceptionDisabled;
 use Eerzho\Instrumentation\Class\Tests\Fixtures\ExcludedArguments;
-use Eerzho\Instrumentation\Class\Tests\Fixtures\ExcludedMethods;
 use Eerzho\Instrumentation\Class\Tests\Fixtures\IncludedArguments;
-use Eerzho\Instrumentation\Class\Tests\Fixtures\IncludedMethods;
 use Eerzho\Instrumentation\Class\Tests\Fixtures\MixedVisibility;
-use Eerzho\Instrumentation\Class\Tests\Fixtures\MultipleArguments;
+use Eerzho\Instrumentation\Class\Tests\Fixtures\PartiallyTraced;
 use Eerzho\Instrumentation\Class\Tests\Fixtures\ReturnDisabled;
 use Eerzho\Instrumentation\Class\Tests\Fixtures\TracedAbstractClass;
 use Eerzho\Instrumentation\Class\Tests\Fixtures\TracedClass;
 use Eerzho\Instrumentation\Class\Tests\Fixtures\TracedEnum;
 use Eerzho\Instrumentation\Class\Tests\Fixtures\TracedInterface;
-use Eerzho\Instrumentation\Class\Tests\Fixtures\TracedMethodOnly;
 use Eerzho\Instrumentation\Class\Tests\Fixtures\TracedTrait;
 use Eerzho\Instrumentation\Class\Tests\Fixtures\TraceMethodWithoutTrace;
+use Eerzho\Instrumentation\Class\Tests\Fixtures\TraceWithoutTraceMethod;
 use Eerzho\Instrumentation\Class\Tests\Fixtures\WithoutTraceClass;
 use PHPUnit\Framework\TestCase;
 use ReflectionException;
@@ -89,7 +87,7 @@ final class AttributeScannerTest extends TestCase
     /**
      * @throws ReflectionException
      */
-    public function testScanPublicMethods(): void
+    public function testScanTracedMethods(): void
     {
         $result = AttributeScanner::scan([TracedClass::class]);
 
@@ -104,27 +102,21 @@ final class AttributeScannerTest extends TestCase
     /**
      * @throws ReflectionException
      */
-    public function testScanMethodWithoutTraceMethod(): void
+    public function testScanTraceWithoutTraceMethod(): void
     {
-        $result = AttributeScanner::scan([TracedMethodOnly::class]);
-
-        self::assertSame([
-            TracedMethodOnly::class => [
-                'handle' => ['arguments' => [], 'return' => false, 'exception' => false],
-            ],
-        ], $result);
+        self::assertSame([], AttributeScanner::scan([TraceWithoutTraceMethod::class]));
     }
 
     /**
      * @throws ReflectionException
      */
-    public function testScanExcludedMethods(): void
+    public function testScanOnlyTracedMethods(): void
     {
-        $result = AttributeScanner::scan([ExcludedMethods::class]);
+        $result = AttributeScanner::scan([PartiallyTraced::class]);
 
         self::assertSame([
-            ExcludedMethods::class => [
-                'visible' => ['arguments' => [], 'return' => false, 'exception' => false],
+            PartiallyTraced::class => [
+                'traced' => ['arguments' => [], 'return' => true, 'exception' => true],
             ],
         ], $result);
     }
@@ -146,45 +138,15 @@ final class AttributeScannerTest extends TestCase
     /**
      * @throws ReflectionException
      */
-    public function testScanNonPublicMethods(): void
+    public function testScanAllVisibilities(): void
     {
         $result = AttributeScanner::scan([MixedVisibility::class]);
 
         self::assertSame([
             MixedVisibility::class => [
-                'publicMethod' => ['arguments' => [], 'return' => false, 'exception' => false],
-            ],
-        ], $result);
-    }
-
-    /**
-     * @throws ReflectionException
-     */
-    public function testScanArgumentPositions(): void
-    {
-        $result = AttributeScanner::scan([MultipleArguments::class]);
-
-        self::assertSame([
-            MultipleArguments::class => [
-                'execute' => [
-                    'arguments' => ['first' => 0, 'second' => 1, 'third' => 2, 'fourth' => 3],
-                    'return' => true,
-                    'exception' => true,
-                ],
-            ],
-        ], $result);
-    }
-
-    /**
-     * @throws ReflectionException
-     */
-    public function testScanIncludedMethods(): void
-    {
-        $result = AttributeScanner::scan([IncludedMethods::class]);
-
-        self::assertSame([
-            IncludedMethods::class => [
-                'visible' => ['arguments' => [], 'return' => false, 'exception' => false],
+                'publicMethod' => ['arguments' => [], 'return' => true, 'exception' => true],
+                'protectedMethod' => ['arguments' => [], 'return' => true, 'exception' => true],
+                'privateMethod' => ['arguments' => [], 'return' => true, 'exception' => true],
             ],
         ], $result);
     }

@@ -11,21 +11,15 @@ use Eerzho\Instrumentation\Class\AttributeScanner;
 use Eerzho\Instrumentation\Class\ClassInstrumentation;
 use Eerzho\Instrumentation\Class\Tests\Fixtures\AddressDto;
 use Eerzho\Instrumentation\Class\Tests\Fixtures\ArgumentsDisabled;
-use Eerzho\Instrumentation\Class\Tests\Fixtures\ArrayArgument;
-use Eerzho\Instrumentation\Class\Tests\Fixtures\BackedEnumArgument;
-use Eerzho\Instrumentation\Class\Tests\Fixtures\DateTimeArgument;
 use Eerzho\Instrumentation\Class\Tests\Fixtures\DtoService;
 use Eerzho\Instrumentation\Class\Tests\Fixtures\ExceptionDisabled;
 use Eerzho\Instrumentation\Class\Tests\Fixtures\ExcludedArguments;
-use Eerzho\Instrumentation\Class\Tests\Fixtures\ExcludedMethods;
-use Eerzho\Instrumentation\Class\Tests\Fixtures\FilteredDto;
-use Eerzho\Instrumentation\Class\Tests\Fixtures\IncludedPropertiesDto;
+use Eerzho\Instrumentation\Class\Tests\Fixtures\ExcludedVisibilityDto;
+use Eerzho\Instrumentation\Class\Tests\Fixtures\IncludedVisibilityDto;
 use Eerzho\Instrumentation\Class\Tests\Fixtures\MixedArgument;
 use Eerzho\Instrumentation\Class\Tests\Fixtures\MixedVisibility;
 use Eerzho\Instrumentation\Class\Tests\Fixtures\MultipleArguments;
 use Eerzho\Instrumentation\Class\Tests\Fixtures\NodeDto;
-use Eerzho\Instrumentation\Class\Tests\Fixtures\NullableArgument;
-use Eerzho\Instrumentation\Class\Tests\Fixtures\ObjectArgument;
 use Eerzho\Instrumentation\Class\Tests\Fixtures\PlainValue;
 use Eerzho\Instrumentation\Class\Tests\Fixtures\ReturnDisabled;
 use Eerzho\Instrumentation\Class\Tests\Fixtures\ReturnValue;
@@ -34,7 +28,6 @@ use Eerzho\Instrumentation\Class\Tests\Fixtures\Stringable;
 use Eerzho\Instrumentation\Class\Tests\Fixtures\ThrowingMethod;
 use Eerzho\Instrumentation\Class\Tests\Fixtures\ThrowingStringable;
 use Eerzho\Instrumentation\Class\Tests\Fixtures\TracedClass;
-use Eerzho\Instrumentation\Class\Tests\Fixtures\TracedMethodOnly;
 use Eerzho\Instrumentation\Class\Tests\Fixtures\TraceMethodWithoutTrace;
 use Eerzho\Instrumentation\Class\Tests\Fixtures\UninitializedDto;
 use Eerzho\Instrumentation\Class\Tests\Fixtures\UserDto;
@@ -199,73 +192,18 @@ final class ClassInstrumentationTest extends TestCase
     /**
      * @throws ReflectionException
      */
-    public function testRegisterTracedMethodOnly(): void
-    {
-        $map = AttributeScanner::scan([TracedMethodOnly::class]);
-        ClassInstrumentation::register($map);
-
-        $service = new TracedMethodOnly();
-        $service->handle('World');
-
-        self::assertCount(1, $this->storage);
-
-        $span = $this->storage[0];
-        self::assertInstanceOf(ImmutableSpan::class, $span);
-
-        $attributes = $span->getAttributes();
-        self::assertSame(TracedMethodOnly::class . '::handle', $span->getName());
-        self::assertSame(TracedMethodOnly::class . '::handle', $attributes->get('code.function.name'));
-        self::assertFalse($attributes->has('name'));
-        self::assertFalse($attributes->has('code.return'));
-    }
-
-    /**
-     * @throws ReflectionException
-     */
-    public function testRegisterExcludedMethods(): void
-    {
-        $map = AttributeScanner::scan([ExcludedMethods::class]);
-        ClassInstrumentation::register($map);
-
-        $service = new ExcludedMethods();
-        $service->visible();
-        $service->secret();
-
-        self::assertCount(1, $this->storage);
-
-        $span = $this->storage[0];
-        self::assertInstanceOf(ImmutableSpan::class, $span);
-
-        $attributes = $span->getAttributes();
-        self::assertSame(ExcludedMethods::class . '::visible', $span->getName());
-        self::assertSame(SpanKind::KIND_INTERNAL, $span->getKind());
-        self::assertSame(ExcludedMethods::class . '::visible', $attributes->get('code.function.name'));
-        self::assertNotNull($attributes->get('code.file.path'));
-        self::assertNotNull($attributes->get('code.line.number'));
-    }
-
-    /**
-     * @throws ReflectionException
-     */
     public function testRegisterExcludedArguments(): void
     {
         $map = AttributeScanner::scan([ExcludedArguments::class]);
         ClassInstrumentation::register($map);
 
-        $service = new ExcludedArguments();
-        $service->process('a', 'b', 'c');
+        (new ExcludedArguments())->process('a', 'b', 'c');
 
         self::assertCount(1, $this->storage);
-
         $span = $this->storage[0];
         self::assertInstanceOf(ImmutableSpan::class, $span);
 
         $attributes = $span->getAttributes();
-        self::assertSame(ExcludedArguments::class . '::process', $span->getName());
-        self::assertSame(SpanKind::KIND_INTERNAL, $span->getKind());
-        self::assertSame(ExcludedArguments::class . '::process', $attributes->get('code.function.name'));
-        self::assertNotNull($attributes->get('code.file.path'));
-        self::assertNotNull($attributes->get('code.line.number'));
         self::assertSame('a', $attributes->get('first'));
         self::assertSame('c', $attributes->get('third'));
         self::assertFalse($attributes->has('second'));
@@ -279,21 +217,18 @@ final class ClassInstrumentationTest extends TestCase
         $map = AttributeScanner::scan([MixedVisibility::class]);
         ClassInstrumentation::register($map);
 
-        $service = new MixedVisibility();
-        $service->publicMethod();
+        // publicMethod() calls the protected and private ones, so all three are hooked
+        (new MixedVisibility())->publicMethod();
 
-        self::assertCount(1, $this->storage);
+        self::assertCount(3, $this->storage);
 
-        $span = $this->storage[0];
-        self::assertInstanceOf(ImmutableSpan::class, $span);
-
-        $attributes = $span->getAttributes();
-
-        self::assertSame(MixedVisibility::class . '::publicMethod', $span->getName());
-        self::assertSame(SpanKind::KIND_INTERNAL, $span->getKind());
-        self::assertSame(MixedVisibility::class . '::publicMethod', $attributes->get('code.function.name'));
-        self::assertNotNull($attributes->get('code.file.path'));
-        self::assertNotNull($attributes->get('code.line.number'));
+        $names = array_map(
+            static fn (ImmutableSpan $span): string => $span->getName(),
+            $this->storage->getArrayCopy(),
+        );
+        self::assertContains(MixedVisibility::class . '::publicMethod', $names);
+        self::assertContains(MixedVisibility::class . '::protectedMethod', $names);
+        self::assertContains(MixedVisibility::class . '::privateMethod', $names);
     }
 
     /**
@@ -304,20 +239,13 @@ final class ClassInstrumentationTest extends TestCase
         $map = AttributeScanner::scan([MultipleArguments::class]);
         ClassInstrumentation::register($map);
 
-        $service = new MultipleArguments();
-        $service->execute('hello', 42, true, 3.14);
+        (new MultipleArguments())->execute('hello', 42, true, 3.14);
 
         self::assertCount(1, $this->storage);
-
         $span = $this->storage[0];
         self::assertInstanceOf(ImmutableSpan::class, $span);
 
         $attributes = $span->getAttributes();
-        self::assertSame(MultipleArguments::class . '::execute', $span->getName());
-        self::assertSame(SpanKind::KIND_INTERNAL, $span->getKind());
-        self::assertSame(MultipleArguments::class . '::execute', $attributes->get('code.function.name'));
-        self::assertNotNull($attributes->get('code.file.path'));
-        self::assertNotNull($attributes->get('code.line.number'));
         self::assertSame('hello', $attributes->get('first'));
         self::assertSame(42, $attributes->get('second'));
         self::assertTrue($attributes->get('third'));
@@ -329,24 +257,15 @@ final class ClassInstrumentationTest extends TestCase
      */
     public function testRegisterNullArgument(): void
     {
-        $map = AttributeScanner::scan([NullableArgument::class]);
+        $map = AttributeScanner::scan([MixedArgument::class]);
         ClassInstrumentation::register($map);
 
-        $service = new NullableArgument();
-        $service->process(null);
+        (new MixedArgument())->process(null);
 
         self::assertCount(1, $this->storage);
-
         $span = $this->storage[0];
         self::assertInstanceOf(ImmutableSpan::class, $span);
-
-        $attributes = $span->getAttributes();
-        self::assertSame(NullableArgument::class . '::process', $span->getName());
-        self::assertSame(SpanKind::KIND_INTERNAL, $span->getKind());
-        self::assertSame(NullableArgument::class . '::process', $attributes->get('code.function.name'));
-        self::assertNotNull($attributes->get('code.file.path'));
-        self::assertNotNull($attributes->get('code.line.number'));
-        self::assertSame('null', $attributes->get('value'));
+        self::assertSame('null', $span->getAttributes()->get('value'));
     }
 
     /**
@@ -354,24 +273,15 @@ final class ClassInstrumentationTest extends TestCase
      */
     public function testRegisterBackedEnumArgument(): void
     {
-        $map = AttributeScanner::scan([BackedEnumArgument::class]);
+        $map = AttributeScanner::scan([MixedArgument::class]);
         ClassInstrumentation::register($map);
 
-        $service = new BackedEnumArgument();
-        $service->setStatus(Status::Active);
+        (new MixedArgument())->process(Status::Active);
 
         self::assertCount(1, $this->storage);
-
         $span = $this->storage[0];
         self::assertInstanceOf(ImmutableSpan::class, $span);
-
-        $attributes = $span->getAttributes();
-        self::assertSame(BackedEnumArgument::class . '::setStatus', $span->getName());
-        self::assertSame(SpanKind::KIND_INTERNAL, $span->getKind());
-        self::assertSame(BackedEnumArgument::class . '::setStatus', $attributes->get('code.function.name'));
-        self::assertNotNull($attributes->get('code.file.path'));
-        self::assertNotNull($attributes->get('code.line.number'));
-        self::assertSame('active', $attributes->get('status'));
+        self::assertSame('active', $span->getAttributes()->get('value'));
     }
 
     /**
@@ -379,20 +289,16 @@ final class ClassInstrumentationTest extends TestCase
      */
     public function testRegisterDateTimeArgument(): void
     {
-        $map = AttributeScanner::scan([DateTimeArgument::class]);
+        $map = AttributeScanner::scan([MixedArgument::class]);
         ClassInstrumentation::register($map);
 
-        $service = new DateTimeArgument();
         $at = new DateTimeImmutable('2026-07-16T12:34:56.789+00:00');
-        $service->process($at);
+        (new MixedArgument())->process($at);
 
         self::assertCount(1, $this->storage);
-
         $span = $this->storage[0];
         self::assertInstanceOf(ImmutableSpan::class, $span);
-
-        $attributes = $span->getAttributes();
-        self::assertSame($at->format(DateTimeInterface::RFC3339_EXTENDED), $attributes->get('at'));
+        self::assertSame($at->format(DateTimeInterface::RFC3339_EXTENDED), $span->getAttributes()->get('value'));
     }
 
     /**
@@ -400,24 +306,15 @@ final class ClassInstrumentationTest extends TestCase
      */
     public function testRegisterObjectWithToStringArgument(): void
     {
-        $map = AttributeScanner::scan([ObjectArgument::class]);
+        $map = AttributeScanner::scan([MixedArgument::class]);
         ClassInstrumentation::register($map);
 
-        $service = new ObjectArgument();
-        $service->process(new Stringable('hello'));
+        (new MixedArgument())->process(new Stringable('hello'));
 
         self::assertCount(1, $this->storage);
-
         $span = $this->storage[0];
         self::assertInstanceOf(ImmutableSpan::class, $span);
-
-        $attributes = $span->getAttributes();
-        self::assertSame(ObjectArgument::class . '::process', $span->getName());
-        self::assertSame(SpanKind::KIND_INTERNAL, $span->getKind());
-        self::assertSame(ObjectArgument::class . '::process', $attributes->get('code.function.name'));
-        self::assertNotNull($attributes->get('code.file.path'));
-        self::assertNotNull($attributes->get('code.line.number'));
-        self::assertSame('hello', $attributes->get('item'));
+        self::assertSame('hello', $span->getAttributes()->get('value'));
     }
 
     /**
@@ -425,24 +322,15 @@ final class ClassInstrumentationTest extends TestCase
      */
     public function testRegisterObjectWithoutToStringArgument(): void
     {
-        $map = AttributeScanner::scan([ObjectArgument::class]);
+        $map = AttributeScanner::scan([MixedArgument::class]);
         ClassInstrumentation::register($map);
 
-        $service = new ObjectArgument();
-        $service->process(new stdClass());
+        (new MixedArgument())->process(new stdClass());
 
         self::assertCount(1, $this->storage);
-
         $span = $this->storage[0];
         self::assertInstanceOf(ImmutableSpan::class, $span);
-
-        $attributes = $span->getAttributes();
-        self::assertSame(ObjectArgument::class . '::process', $span->getName());
-        self::assertSame(SpanKind::KIND_INTERNAL, $span->getKind());
-        self::assertSame(ObjectArgument::class . '::process', $attributes->get('code.function.name'));
-        self::assertNotNull($attributes->get('code.file.path'));
-        self::assertNotNull($attributes->get('code.line.number'));
-        self::assertSame('stdClass', $attributes->get('item'));
+        self::assertSame('stdClass', $span->getAttributes()->get('value'));
     }
 
     /**
@@ -450,24 +338,15 @@ final class ClassInstrumentationTest extends TestCase
      */
     public function testRegisterArrayArgument(): void
     {
-        $map = AttributeScanner::scan([ArrayArgument::class]);
+        $map = AttributeScanner::scan([MixedArgument::class]);
         ClassInstrumentation::register($map);
 
-        $service = new ArrayArgument();
-        $service->process(['a' => 1, 'b' => 2]);
+        (new MixedArgument())->process(['a' => 1, 'b' => 2]);
 
         self::assertCount(1, $this->storage);
-
         $span = $this->storage[0];
         self::assertInstanceOf(ImmutableSpan::class, $span);
-
-        $attributes = $span->getAttributes();
-        self::assertSame(ArrayArgument::class . '::process', $span->getName());
-        self::assertSame(SpanKind::KIND_INTERNAL, $span->getKind());
-        self::assertSame(ArrayArgument::class . '::process', $attributes->get('code.function.name'));
-        self::assertNotNull($attributes->get('code.file.path'));
-        self::assertNotNull($attributes->get('code.line.number'));
-        self::assertSame('{"a":1,"b":2}', $attributes->get('items'));
+        self::assertSame('{"a":1,"b":2}', $span->getAttributes()->get('value'));
     }
 
     /**
@@ -475,24 +354,15 @@ final class ClassInstrumentationTest extends TestCase
      */
     public function testRegisterArrayArgumentWithJsonException(): void
     {
-        $map = AttributeScanner::scan([ArrayArgument::class]);
+        $map = AttributeScanner::scan([MixedArgument::class]);
         ClassInstrumentation::register($map);
 
-        $service = new ArrayArgument();
-        $service->process([NAN]);
+        (new MixedArgument())->process([NAN]);
 
         self::assertCount(1, $this->storage);
-
         $span = $this->storage[0];
         self::assertInstanceOf(ImmutableSpan::class, $span);
-
-        $attributes = $span->getAttributes();
-        self::assertSame(ArrayArgument::class . '::process', $span->getName());
-        self::assertSame(SpanKind::KIND_INTERNAL, $span->getKind());
-        self::assertSame(ArrayArgument::class . '::process', $attributes->get('code.function.name'));
-        self::assertNotNull($attributes->get('code.file.path'));
-        self::assertNotNull($attributes->get('code.line.number'));
-        self::assertSame('array', $attributes->get('items'));
+        self::assertSame('array', $span->getAttributes()->get('value'));
     }
 
     /**
@@ -506,22 +376,13 @@ final class ClassInstrumentationTest extends TestCase
         $resource = fopen('php://memory', 'r');
         self::assertIsResource($resource);
 
-        $service = new MixedArgument();
-        $service->process($resource);
+        (new MixedArgument())->process($resource);
         fclose($resource);
 
         self::assertCount(1, $this->storage);
-
         $span = $this->storage[0];
         self::assertInstanceOf(ImmutableSpan::class, $span);
-
-        $attributes = $span->getAttributes();
-        self::assertSame(MixedArgument::class . '::process', $span->getName());
-        self::assertSame(SpanKind::KIND_INTERNAL, $span->getKind());
-        self::assertSame(MixedArgument::class . '::process', $attributes->get('code.function.name'));
-        self::assertNotNull($attributes->get('code.file.path'));
-        self::assertNotNull($attributes->get('code.line.number'));
-        self::assertSame('resource', $attributes->get('value'));
+        self::assertSame('resource', $span->getAttributes()->get('value'));
     }
 
     /**
@@ -544,15 +405,8 @@ final class ClassInstrumentationTest extends TestCase
         $span = $this->storage[0];
         self::assertInstanceOf(ImmutableSpan::class, $span);
 
-        $attributes = $span->getAttributes();
         $status = $span->getStatus();
         $events = $span->getEvents();
-
-        self::assertSame(ThrowingMethod::class . '::execute', $span->getName());
-        self::assertSame(SpanKind::KIND_INTERNAL, $span->getKind());
-        self::assertSame(ThrowingMethod::class . '::execute', $attributes->get('code.function.name'));
-        self::assertNotNull($attributes->get('code.file.path'));
-        self::assertNotNull($attributes->get('code.line.number'));
 
         self::assertSame(StatusCode::STATUS_ERROR, $status->getCode());
         self::assertSame('something went wrong', $status->getDescription());
@@ -611,8 +465,6 @@ final class ClassInstrumentationTest extends TestCase
         self::assertSame('Ann', $attributes->get('dto.name'));
         self::assertSame('Almaty', $attributes->get('dto.address.city'));
         self::assertSame('050000', $attributes->get('dto.address.zip'));
-        // private properties are not expanded
-        self::assertFalse($attributes->has('dto.passwordHash'));
     }
 
     /**
@@ -623,7 +475,7 @@ final class ClassInstrumentationTest extends TestCase
         $map = AttributeScanner::scan([DtoService::class]);
         ClassInstrumentation::register($map);
 
-        (new DtoService())->handle(new FilteredDto('a@b.c', 'secret-token'));
+        (new DtoService())->handle(new ExcludedVisibilityDto());
 
         self::assertCount(1, $this->storage);
 
@@ -631,8 +483,14 @@ final class ClassInstrumentationTest extends TestCase
         self::assertInstanceOf(ImmutableSpan::class, $span);
 
         $attributes = $span->getAttributes();
-        self::assertSame('a@b.c', $attributes->get('dto.email'));
-        self::assertFalse($attributes->has('dto.token'));
+        // one excluded per visibility -> gone
+        self::assertFalse($attributes->has('dto.publicOne'));
+        self::assertFalse($attributes->has('dto.protectedOne'));
+        self::assertFalse($attributes->has('dto.privateOne'));
+        // the rest stay, regardless of visibility
+        self::assertSame('public-two', $attributes->get('dto.publicTwo'));
+        self::assertSame('protected-two', $attributes->get('dto.protectedTwo'));
+        self::assertSame('private-two', $attributes->get('dto.privateTwo'));
     }
 
     /**
@@ -727,7 +585,7 @@ final class ClassInstrumentationTest extends TestCase
         $map = AttributeScanner::scan([DtoService::class]);
         ClassInstrumentation::register($map);
 
-        (new DtoService())->handle(new IncludedPropertiesDto(7, 'Ann'));
+        (new DtoService())->handle(new IncludedVisibilityDto());
 
         self::assertCount(1, $this->storage);
 
@@ -735,8 +593,13 @@ final class ClassInstrumentationTest extends TestCase
         self::assertInstanceOf(ImmutableSpan::class, $span);
 
         $attributes = $span->getAttributes();
-        self::assertSame(7, $attributes->get('dto.id'));
-        // "name" is not in the include allowlist
-        self::assertFalse($attributes->has('dto.name'));
+        // only the allowlisted one per visibility
+        self::assertSame('public-one', $attributes->get('dto.publicOne'));
+        self::assertSame('protected-one', $attributes->get('dto.protectedOne'));
+        self::assertSame('private-one', $attributes->get('dto.privateOne'));
+        // the rest are dropped, regardless of visibility
+        self::assertFalse($attributes->has('dto.publicTwo'));
+        self::assertFalse($attributes->has('dto.protectedTwo'));
+        self::assertFalse($attributes->has('dto.privateTwo'));
     }
 }

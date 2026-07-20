@@ -8,10 +8,14 @@ use Eerzho\Instrumentation\Class\Attribute\Trace;
 use Eerzho\Instrumentation\Class\Attribute\TraceMethod;
 
 #[Trace]
-final class ObjectArgument
+final class PartiallyTraced
 {
     #[TraceMethod]
-    public function process(object $item): void
+    public function traced(): void
+    {
+    }
+
+    public function untraced(): void
     {
     }
 }

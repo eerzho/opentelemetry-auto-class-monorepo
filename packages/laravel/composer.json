@@ -1,6 +1,6 @@
 {
   "name": "eerzho/opentelemetry-auto-class-laravel",
-  "description": "One tag, full visibility — every method call in your Laravel app shows up in your traces, zero config.",
+  "description": "Trace what your Laravel methods received, returned, and threw — without writing a single span.",
   "type": "library",
   "license": "MIT",
   "keywords": [
