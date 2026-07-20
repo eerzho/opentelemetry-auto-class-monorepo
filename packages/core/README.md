@@ -144,7 +144,7 @@ Each captured argument is serialized to a span-compatible value:
 
 Object expansion via `#[TraceProperties]`:
 
-- Each property becomes its own attribute, keyed `argument.property` (e.g. `address.city`).
+- Each property becomes its own attribute, keyed `code.argument.{name}.{property}` (e.g. `code.argument.address.city`).
 - **Recursive** and unbounded — a nested property keeps expanding while its class also has `#[TraceProperties]`; otherwise it falls back to the rules above.
 - An uninitialized typed property is recorded as `"uninitialized"`.
 - Circular references are broken — a repeated object degrades to its class name.
@@ -154,13 +154,13 @@ Object expansion via `#[TraceProperties]`:
 
 Each traced call produces an `INTERNAL` span named `ClassName::methodName`, with:
 
-| Attribute            | Value                                                                      |
-|----------------------|----------------------------------------------------------------------------|
-| `code.function.name` | `ClassName::methodName`                                                    |
-| `code.file.path`     | File where the method is defined                                           |
-| `code.line.number`   | Line number of the method                                                  |
-| `code.return`        | Return value, serialized the same way (on success, unless `return: false`) |
-| Method arguments     | Parameter name → serialized value                                          |
+| Attribute              | Value                                                             |
+|------------------------|-------------------------------------------------------------------|
+| `code.function.name`   | `ClassName::methodName`                                           |
+| `code.file.path`       | File where the method is defined                                  |
+| `code.line.number`     | Line number of the method                                         |
+| `code.return`          | Return value, serialized the same way                             |
+| `code.argument.{name}` | Method argument, keyed by parameter name, serialized the same way |
 
 If the method throws, the span records an `exception` event and its status is set to `ERROR`:
 
