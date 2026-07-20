@@ -31,6 +31,7 @@ use Eerzho\Instrumentation\Class\Tests\Fixtures\ThrowingMethod;
 use Eerzho\Instrumentation\Class\Tests\Fixtures\ThrowingStringable;
 use Eerzho\Instrumentation\Class\Tests\Fixtures\TraceArgumentsWithoutTrace;
 use Eerzho\Instrumentation\Class\Tests\Fixtures\TracedClass;
+use Eerzho\Instrumentation\Class\Tests\Fixtures\TraceWithoutArguments;
 use Eerzho\Instrumentation\Class\Tests\Fixtures\UninitializedDto;
 use Eerzho\Instrumentation\Class\Tests\Fixtures\UserDto;
 use Eerzho\Instrumentation\Class\Tests\Fixtures\WithoutTraceClass;
@@ -125,6 +126,28 @@ final class ClassInstrumentationTest extends TestCase
         self::assertNotNull($attributes->get('code.file.path'));
         self::assertNotNull($attributes->get('code.line.number'));
         self::assertSame('World', $attributes->get('name'));
+    }
+
+    /**
+     * @throws ReflectionException
+     */
+    public function testRegisterMethodWithoutTraceArguments(): void
+    {
+        $map = AttributeScanner::scan([TraceWithoutArguments::class]);
+        ClassInstrumentation::register($map);
+
+        $service = new TraceWithoutArguments();
+        $service->handle('World');
+
+        self::assertCount(1, $this->storage);
+
+        $span = $this->storage[0];
+        self::assertInstanceOf(ImmutableSpan::class, $span);
+
+        $attributes = $span->getAttributes();
+        self::assertSame(TraceWithoutArguments::class . '::handle', $span->getName());
+        self::assertSame(TraceWithoutArguments::class . '::handle', $attributes->get('code.function.name'));
+        self::assertFalse($attributes->has('name'));
     }
 
     /**

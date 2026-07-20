@@ -19,6 +19,7 @@ use Eerzho\Instrumentation\Class\Tests\Fixtures\TracedClass;
 use Eerzho\Instrumentation\Class\Tests\Fixtures\TracedEnum;
 use Eerzho\Instrumentation\Class\Tests\Fixtures\TracedInterface;
 use Eerzho\Instrumentation\Class\Tests\Fixtures\TracedTrait;
+use Eerzho\Instrumentation\Class\Tests\Fixtures\TraceWithoutArguments;
 use Eerzho\Instrumentation\Class\Tests\Fixtures\WithoutTraceClass;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
@@ -99,6 +100,20 @@ final class AttributeScannerTest extends TestCase
             TracedClass::class => [
                 'greet' => ['name' => 0],
                 'add' => ['a' => 0, 'b' => 1],
+            ],
+        ], $result);
+    }
+
+    /**
+     * @throws ReflectionException
+     */
+    public function testScanMethodWithoutTraceArguments(): void
+    {
+        $result = AttributeScanner::scan([TraceWithoutArguments::class]);
+
+        self::assertSame([
+            TraceWithoutArguments::class => [
+                'handle' => [],
             ],
         ], $result);
     }
