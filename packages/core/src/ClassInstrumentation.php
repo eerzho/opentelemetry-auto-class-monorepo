@@ -85,7 +85,7 @@ final class ClassInstrumentation
 
                 foreach ($positionToName as $position => $name) {
                     if (array_key_exists($position, $params)) {
-                        foreach (self::serialize($name, $params[$position]) as $key => $value) {
+                        foreach (self::serialize('code.argument.' . $name, $params[$position]) as $key => $value) {
                             assert($key !== '');
                             $builder->setAttribute($key, $value);
                         }
