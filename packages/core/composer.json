@@ -1,6 +1,6 @@
 {
   "name": "eerzho/opentelemetry-auto-class",
-  "description": "One tag, full visibility — every method call in your PHP app shows up in your traces, no boilerplate, no framework required.",
+  "description": "Trace what your methods received, returned, and threw — without writing a single span. No framework required.",
   "type": "library",
   "license": "MIT",
   "keywords": [
