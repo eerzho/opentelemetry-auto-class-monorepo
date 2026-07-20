@@ -86,11 +86,14 @@ final class AttributeScanner
     private static function scanArguments(ReflectionMethod $method): array
     {
         $attribute = self::findTraceArguments($method);
+        if ($attribute === null) {
+            return [];
+        }
 
         $arguments = [];
         foreach ($method->getParameters() as $parameter) {
             $name = $parameter->getName();
-            if ($attribute === null || self::isAllowed($name, $attribute->include, $attribute->exclude)) {
+            if (self::isAllowed($name, $attribute->include, $attribute->exclude)) {
                 $arguments[$name] = $parameter->getPosition();
             }
         }
