@@ -62,7 +62,7 @@ class OrderService
     public function healthCheck(): bool {}   // no #[TraceMethod] -> not traced
 }
 
-#[TraceProperties(exclude: ['zip'])]       // expand public props, but hide "zip"
+#[TraceProperties(exclude: ['zip'])]       // expand every prop but zip
 class Address
 {
     public function __construct(public string $city, public string $zip) {}

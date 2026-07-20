@@ -16,7 +16,6 @@ use OpenTelemetry\Context\Context;
 use OpenTelemetry\SemConv\Attributes\CodeAttributes;
 use OpenTelemetry\SemConv\Version;
 use ReflectionObject;
-use ReflectionProperty;
 use Throwable;
 
 use function array_key_exists;
@@ -168,7 +167,7 @@ final class ClassInstrumentation
                     assert($attribute instanceof TraceProperties);
 
                     $result = [];
-                    foreach ($reflection->getProperties(ReflectionProperty::IS_PUBLIC) as $property) {
+                    foreach ($reflection->getProperties() as $property) {
                         $name = $property->getName();
                         if (!self::isAllowed($name, $attribute->include, $attribute->exclude)) {
                             continue;

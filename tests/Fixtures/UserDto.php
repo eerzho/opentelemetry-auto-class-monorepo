@@ -13,7 +13,6 @@ final class UserDto
         public int $id,
         public string $name,
         public AddressDto $address,
-        private string $passwordHash = 'secret',
     ) {
     }
 }

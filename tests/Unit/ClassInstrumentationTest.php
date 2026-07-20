@@ -14,8 +14,8 @@ use Eerzho\Instrumentation\Class\Tests\Fixtures\ArgumentsDisabled;
 use Eerzho\Instrumentation\Class\Tests\Fixtures\DtoService;
 use Eerzho\Instrumentation\Class\Tests\Fixtures\ExceptionDisabled;
 use Eerzho\Instrumentation\Class\Tests\Fixtures\ExcludedArguments;
-use Eerzho\Instrumentation\Class\Tests\Fixtures\FilteredDto;
-use Eerzho\Instrumentation\Class\Tests\Fixtures\IncludedPropertiesDto;
+use Eerzho\Instrumentation\Class\Tests\Fixtures\ExcludedVisibilityDto;
+use Eerzho\Instrumentation\Class\Tests\Fixtures\IncludedVisibilityDto;
 use Eerzho\Instrumentation\Class\Tests\Fixtures\MixedArgument;
 use Eerzho\Instrumentation\Class\Tests\Fixtures\MixedVisibility;
 use Eerzho\Instrumentation\Class\Tests\Fixtures\MultipleArguments;
@@ -465,8 +465,6 @@ final class ClassInstrumentationTest extends TestCase
         self::assertSame('Ann', $attributes->get('dto.name'));
         self::assertSame('Almaty', $attributes->get('dto.address.city'));
         self::assertSame('050000', $attributes->get('dto.address.zip'));
-        // private properties are not expanded
-        self::assertFalse($attributes->has('dto.passwordHash'));
     }
 
     /**
@@ -477,7 +475,7 @@ final class ClassInstrumentationTest extends TestCase
         $map = AttributeScanner::scan([DtoService::class]);
         ClassInstrumentation::register($map);
 
-        (new DtoService())->handle(new FilteredDto('a@b.c', 'secret-token'));
+        (new DtoService())->handle(new ExcludedVisibilityDto());
 
         self::assertCount(1, $this->storage);
 
@@ -485,8 +483,14 @@ final class ClassInstrumentationTest extends TestCase
         self::assertInstanceOf(ImmutableSpan::class, $span);
 
         $attributes = $span->getAttributes();
-        self::assertSame('a@b.c', $attributes->get('dto.email'));
-        self::assertFalse($attributes->has('dto.token'));
+        // one excluded per visibility -> gone
+        self::assertFalse($attributes->has('dto.publicOne'));
+        self::assertFalse($attributes->has('dto.protectedOne'));
+        self::assertFalse($attributes->has('dto.privateOne'));
+        // the rest stay, regardless of visibility
+        self::assertSame('public-two', $attributes->get('dto.publicTwo'));
+        self::assertSame('protected-two', $attributes->get('dto.protectedTwo'));
+        self::assertSame('private-two', $attributes->get('dto.privateTwo'));
     }
 
     /**
@@ -581,7 +585,7 @@ final class ClassInstrumentationTest extends TestCase
         $map = AttributeScanner::scan([DtoService::class]);
         ClassInstrumentation::register($map);
 
-        (new DtoService())->handle(new IncludedPropertiesDto(7, 'Ann'));
+        (new DtoService())->handle(new IncludedVisibilityDto());
 
         self::assertCount(1, $this->storage);
 
@@ -589,8 +593,13 @@ final class ClassInstrumentationTest extends TestCase
         self::assertInstanceOf(ImmutableSpan::class, $span);
 
         $attributes = $span->getAttributes();
-        self::assertSame(7, $attributes->get('dto.id'));
-        // "name" is not in the include allowlist
-        self::assertFalse($attributes->has('dto.name'));
+        // only the allowlisted one per visibility
+        self::assertSame('public-one', $attributes->get('dto.publicOne'));
+        self::assertSame('protected-one', $attributes->get('dto.protectedOne'));
+        self::assertSame('private-one', $attributes->get('dto.privateOne'));
+        // the rest are dropped, regardless of visibility
+        self::assertFalse($attributes->has('dto.publicTwo'));
+        self::assertFalse($attributes->has('dto.protectedTwo'));
+        self::assertFalse($attributes->has('dto.privateTwo'));
     }
 }

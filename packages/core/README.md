@@ -124,7 +124,7 @@ Each method maps to its `arguments` (`name => position`) plus the `return` and `
 
 An empty `include` means "no allowlist" (everything), **not** "nothing".
 
-Only **public** properties are expanded — non-public properties are ignored.
+All properties are expanded — use `exclude` to drop sensitive ones (tokens, hashes).
 
 ### Argument serialization
 
@@ -144,7 +144,7 @@ Each captured argument is serialized to a span-compatible value:
 
 Object expansion via `#[TraceProperties]`:
 
-- Each public property becomes its own attribute, keyed `argument.property` (e.g. `address.city`).
+- Each property becomes its own attribute, keyed `argument.property` (e.g. `address.city`).
 - **Recursive** and unbounded — a nested property keeps expanding while its class also has `#[TraceProperties]`; otherwise it falls back to the rules above.
 - An uninitialized typed property is recorded as `"uninitialized"`.
 - Circular references are broken — a repeated object degrades to its class name.
